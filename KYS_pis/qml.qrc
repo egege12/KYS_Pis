@@ -1,6 +1,26 @@
 <RCC>
-    <qresource prefix="/resources">
+    <qresource prefix="/">
         <file>Secondary.qml</file>
         <file>Main.qml</file>
+        <file>ButtonBar.qml</file>
+        <file>MenuButton.qml</file>
+        <file>driverMidArea.qml</file>
+        <file>driverDirectionSelection.qml</file>
+        <file>driverAnonsmentSelection.qml</file>
+    </qresource>
+    <qresource prefix="/img">
+        <file>iconEscapeButton.png</file>
+        <file>iconFullscreenButton.png</file>
+        <file>iconIconSizeButton.png</file>
+        <file>backgroundERciyes.jpg</file>
+        <file>instaLogo.png</file>
+        <file>kayseriLogo.png</file>
+        <file>twitterLogo.png</file>
+        <file>backgroundHalfOpacity.png</file>
+        <file>callcenmterLogo.png</file>
+        <file>kayseriBBLogo.png</file>
+        <file>busDRMicon.png</file>
+        <file>anonunceIcon.png</file>
+        <file>back.png</file>
     </qresource>
 </RCC>
