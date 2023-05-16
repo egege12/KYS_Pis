@@ -24,10 +24,12 @@ Window {
 
     }
     Rectangle {
+
+        id:infoArea
         anchors.left:parent.left
         anchors.top:parent.top
-        width: parent.width/2
-        height: 540
+        width: (parent.width-blackArea.width)/2
+        height: parent.height
         color: "transparent"
         Image{
             id:backgroundImageLeftMAin
@@ -110,7 +112,7 @@ Window {
             Text {
                 id: dateText
                 font.pixelSize: 18
-                text: Qt.formatDate(new Date(), "dd MMMM yyyy \ndddd ")
+                text: new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \ndddd")
                 anchors.left: logoUlasim.right
                 anchors.leftMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
@@ -123,7 +125,7 @@ Window {
                 font.family: "Verdana"
                 color: "white"
                 function set(){
-                    dateText.text=Qt.formatDate(new Date(), "dd MMMM yyyy \ndddd ");
+                    dateText.text= new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \ndddd");
                 }
             }
         }
@@ -143,9 +145,118 @@ Window {
             }
             Rectangle{
                 id:highlightedArea
+                anchors.right: parent.right
+                anchors.top:parent.top
+                anchors.bottom:parent.bottom
+                width:parent.width * .4
+                color:"transparent"
 
 
+                ListModel{
+                    id: duraklar
+                    ListElement{
+                        name:"Durak1"
+                    }
+                    ListElement{
+                        name:"Durak2"
+                    }
+                    ListElement{
+                        name:"Durak3"
+                    }
+                    ListElement{
+                        name:"Durak4"
+                    }
+                    ListElement{
+                        name:"Durak5"
+                    }
+                    ListElement{
+                        name:"Durak6"
+                    }
+
+                }
+
+                ListView{
+                    id:myListview
+                    anchors.fill: parent
+
+                    model: duraklar
+                    focus:true
+                    spacing:(highlightedArea.height / 7)/5
+                    delegate:
+                        Rectangle{
+                            width:highlightedArea.width
+                            height:highlightedArea.height / 7
+                            color:"transparent"
+
+                            Image{
+                                anchors.fill: parent
+                                source:(duraklar.get(duraklar.count/duraklar.count).name === name) ? "qrc:/img/backgroundHalfOpacity.png" : (duraklar.get(0).name === name)? "qrc:/img/backgroundredHalfOpacity.png" : "qrc:/img/backgroundgreenHalfOpacity.png"
+                            }
+                            Text{
+                                text: name
+                                font.capitalization: Font.AllUppercase
+                                anchors.verticalCenter: parent.verticalCenter
+                                elide: Text.ElideNone
+                                antialiasing: true
+                                font.hintingPreference: Font.PreferNoHinting
+                                style: Text.Normal
+                                focus: false
+                                font.weight: Font.Bold
+                                font.pixelSize: 48
+                                font.family: "Verdana"
+                                color: (duraklar.get(duraklar.count/duraklar.count).name === name) ? ((root.pulse === true)? "gray":"white") : (duraklar.get(0).name === name)? "gray" : "white"
+                            }
+
+
+                        }
+
+
+                    populate: Transition{
+                        NumberAnimation{
+                            properties:"x,y";
+                            duration:300
+                        }
+                    }
+                    add: Transition{
+
+                        NumberAnimation {
+                            property:"x";
+                            from:1500;
+                            to: 0;
+                            duration:1000
+                        }
+                        NumberAnimation {
+                            property:"opacity";
+                            from:0;
+                            to: 1.0;
+                            duration:1000
+                        }
+
+
+
+                    }
+
+                    remove: Transition{
+
+                        NumberAnimation {
+                            property:"x";
+                            from:0;
+                            to: -1500;
+                            duration:1000
+                        }
+                        NumberAnimation {
+                            property:"opacity";
+                            from:1.0;
+                            to: 0;
+                            duration:1000
+                        }
+
+
+                    }
+                }
             }
+
+
 
         }
         Rectangle{
@@ -231,13 +342,22 @@ Window {
         }
 
     }
+    Rectangle{
+        id:blackArea
+        height:parent.height
+        width: 30
+        anchors.left: infoArea.right
+        anchors.right:videoutput.left
+        color:"black"
+    }
+
     // Media player area
     Item {
         id:videoArea
         anchors.right:parent.right
         anchors.top:parent.top
-        width: parent.width/2
-        height: 540
+        width: (parent.width-blackArea.width)/2
+        height: parent.height
 
         property int mediaIndex
 
@@ -245,6 +365,7 @@ Window {
             id: folderModel
             folder: "file:///C:/Users/ege-t/Desktop/Videolar"
             nameFilters: ["*.mp4"]
+
         }
 
         MediaPlayer {
@@ -275,22 +396,24 @@ Window {
     }
 
     Timer {
-           id: timeTimer
-           interval: 1000
-           repeat: true
-           running: true
-           triggeredOnStart: true
-           onTriggered: timeText.set()
-       }
+        id: timeTimer
+        interval: 1000
+        repeat: true
+        running: true
+        triggeredOnStart: true
+        onTriggered: {timeText.set()
+                      root.pulse = ! root.pulse
+        }
+    }
     Timer {
-           id: dateTimer
-           interval: 3600
-           repeat: true
-           running: true
-           triggeredOnStart: true
-           onTriggered: {dateText.set()
-           }
-       }
+        id: dateTimer
+        interval: 3600
+        repeat: true
+        running: true
+        triggeredOnStart: true
+        onTriggered: {dateText.set()
+        }
+    }
     Timer {
         id:videoStarter
         interval:5000
@@ -300,6 +423,35 @@ Window {
             videoArea.mediaIndex=0
             player.source = folderModel.get(videoArea.mediaIndex,"filePath")
             videoArea.mediaIndex=1
+        }
+    }
+    property bool pulse : false;
+
+    property bool currentStation : false;
+
+    property bool switchOk : true;
+    property int durakCounter: 7;
+    Timer {
+        id: listUpdater
+        interval: 10000
+        repeat: true
+        running: true
+        triggeredOnStart: false
+        onTriggered: {
+
+
+                if(root.switchOk){
+                    duraklar.remove(0,1);
+                    root.switchOk = !root.switchOk
+                    listUpdater.interval= 500
+
+                }else{
+                    duraklar.append({"name": "DURAK"+root.durakCounter.toString()})
+                    root.durakCounter ++;
+                    root.switchOk = !root.switchOk
+                    listUpdater.interval= 10000
+                }
+
         }
     }
 

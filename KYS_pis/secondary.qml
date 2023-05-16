@@ -138,7 +138,7 @@ Window {
             Text {
                 id: dateText
                 font.pixelSize: 18
-                text: Qt.formatDate(new Date(), "dd MMMM yyyy \ndddd ")
+                text: new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \ndddd")
                 anchors.left: logoUlasim.right
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.leftMargin: 10
@@ -151,7 +151,7 @@ Window {
                 font.family: "Verdana"
                 color: "white"
                 function set(){
-                    dateText.text=Qt.formatDate(new Date(), "dd MMMM yyyy \ndddd ");
+                    dateText.text=new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \ndddd");
                 }
             }
         }

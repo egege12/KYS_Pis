@@ -22,5 +22,8 @@
         <file>busDRMicon.png</file>
         <file>anonunceIcon.png</file>
         <file>back.png</file>
+        <file>backgroundgreenHalfOpacity.png</file>
+        <file>backgroundredblueHalfOpacity.png</file>
+        <file>backgroundredHalfOpacity.png</file>
     </qresource>
 </RCC>
