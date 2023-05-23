@@ -12,8 +12,8 @@ Window {
     height: 540
     color: "white"
     Component.onCompleted: {
-        x= Qt.application.screens[0].virtualX;
-        y= Qt.application.screens[0].virtualY;
+        x= Qt.application.screens[1].virtualX;
+        y= Qt.application.screens[1].virtualY;
     }
     flags: Qt.FramelessWindowHint | Qt.Window | Qt.MaximizeUsingFullscreenGeometryHint
     Loader {
@@ -255,6 +255,55 @@ Window {
                     }
                 }
             }
+            Rectangle{
+                id:stationArea
+                anchors.left: parent.left
+                anchors.top:parent.top
+                anchors.bottom:parent.bottom
+                width:parent.width * .6
+                color:"transparent"
+                Text{
+                    id: stationInfo
+                    font.pixelSize: 72
+                    height: 60
+                    text: duraklar.get(1).name
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10
+                    anchors.right:parent.right
+                    anchors.rightMargin:10
+                    anchors.verticalCenter: parent.verticalCenter
+                    elide: Text.ElideRight
+                    antialiasing: true
+                    font.hintingPreference: Font.PreferNoHinting
+                    style: Text.Normal
+                    focus: false
+                    font.weight: Font.Bold
+                    font.family: "Verdana"
+                    color: "white"
+                    font.capitalization: Font.AllUppercase
+                }
+                Text{
+                    id: stationTypetext
+                    font.pixelSize: 40
+                    height: stationTypetext.implicitHeight
+                    text: ""
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10
+                    anchors.bottom:stationInfo.top
+                    anchors.bottomMargin: 20
+                    elide: Text.ElideRight
+                    antialiasing: true
+                    font.hintingPreference: Font.PreferNoHinting
+                    style: Text.Normal
+                    focus: false
+                    font.weight: Font.Bold
+                    font.family: "Verdana"
+                    color: "cyan"
+                    font.capitalization: Font.AllUppercase
+                }
+
+
+            }
 
 
 
@@ -352,18 +401,18 @@ Window {
     }
 
     // Media player area
-    Item {
+    Rectangle {
         id:videoArea
         anchors.right:parent.right
         anchors.top:parent.top
         width: (parent.width-blackArea.width)/2
         height: parent.height
-
+        color : "black"
         property int mediaIndex
 
         FolderListModel {
             id: folderModel
-            folder: "file:///C:/Users/ege-t/Desktop/Videolar"
+            folder: "file:///C:/PISVideolar"
             nameFilters: ["*.mp4"]
 
         }
@@ -431,6 +480,8 @@ Window {
 
     property bool switchOk : true;
     property int durakCounter: 7;
+
+    property int stage :2
     Timer {
         id: listUpdater
         interval: 10000
@@ -438,7 +489,7 @@ Window {
         running: true
         triggeredOnStart: false
         onTriggered: {
-
+            if(root.stage ===1){
 
                 if(root.switchOk){
                     duraklar.remove(0,1);
@@ -451,8 +502,46 @@ Window {
                     root.switchOk = !root.switchOk
                     listUpdater.interval= 10000
                 }
+            }
 
+             stationInfo.text=(duraklar.get(1).name)
+            if(root.switchOk){
+            if(root.currentStation){
+                stationTypetext.text = "ŞİMDİKİ DURAK"
+                playerSound.source = "file:///C:/PISduraklar/example.mp3"
+                root.soundEnd = true
+                root.stage=1
+            }else{
+                stationTypetext.text = "SIRADAKİ DURAK"
+                playerSound.source = "file:///C:/PISduraklar/next_station.mp3"
+                root.soundEnd = false
+                root.stage=2
+            }
+            root.currentStation= !root.currentStation
+            }
         }
+    }
+    property bool soundEnd: false;
+    MediaPlayer {
+        id: playerSound
+        audioOutput: audio
+        onMediaStatusChanged: {
+            if (playerSound.mediaStatus == MediaPlayer.EndOfMedia) {
+                if(soundEnd){
+                    playerSound.source = ""
+                }else{
+                    playerSound.source = "file:///C:/PISduraklar/example.mp3"
+                    root.soundEnd = true
+                }
+            }
+        }
+        onSourceChanged: {
+            playerSound.play();
+        }
+
+    }
+    AudioOutput{
+        id:audio
     }
 
 }

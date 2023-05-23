@@ -108,7 +108,7 @@ Item {
                 disableButtonClick: false
                 buttonText: ""
                 onButtonClicked:{
-                    playerSound.source="file:///C:/Users/ege-t/Desktop/anonslar/priority.mp3"
+                    playerSound.source="file:///C:/PISanonslar/priority.mp3"
 
                 }
             }
