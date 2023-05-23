@@ -7,8 +7,8 @@ Window {
     height: 600
     color: "white"
     Component.onCompleted: {
-        x= Qt.application.screens[0].virtualX;
-        y= Qt.application.screens[0].virtualY;
+        x= Qt.application.screens[1].virtualX;
+        y= Qt.application.screens[1].virtualY;
     }
     flags: Qt.FramelessWindowHint | Qt.Window | Qt.MaximizeUsingFullscreenGeometryHint
 
@@ -60,7 +60,7 @@ Window {
         Image{
             id:backgroundImageLeftMAin
             anchors.fill: parent
-            source:"img/backgroundERciyes.jpg"
+            source:"qrc:/img/driverBackground.png"
 
             mipmap:true
             z:0

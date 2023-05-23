@@ -12,8 +12,8 @@ Window {
     height: 540
     color: "white"
     Component.onCompleted: {
-        x= Qt.application.screens[1].virtualX;
-        y= Qt.application.screens[1].virtualY;
+        x= Qt.application.screens[0].virtualX;
+        y= Qt.application.screens[0].virtualY;
     }
     flags: Qt.FramelessWindowHint | Qt.Window | Qt.MaximizeUsingFullscreenGeometryHint
     Loader {
@@ -34,69 +34,29 @@ Window {
         Image{
             id:backgroundImageLeftMAin
             anchors.fill: parent
-            source:"img/backgroundERciyes.jpg"
+            source:"qrc:/img/Mainbackground.png"
 
             mipmap:true
             z:0
         }
 
         Rectangle{
-            id:topBanner
+            id:leftSide
             anchors.left:parent.left
             anchors.top:parent.top
-            width: parent.width
-            height: parent.height * 0.12
+            width: 293
+            height: parent.height
             color: "transparent"
-            Image{
-                id:backgroundImageTopBanner
-                anchors.fill: parent
-                source:"/img/backgroundHalfOpacity.png"
-                mipmap:true
-            }
-            z:1
-            Image{
-                id:logoUlasim
-                anchors.left: parent.left
-                anchors.topMargin: 5
-                anchors.leftMargin:5
-                anchors.top:parent.top
-                source:"qrc:/img/kayseriLogo.png"
-                height: parent.height - 10
-                fillMode: Image.PreserveAspectFit
-                mipmap:true
-            }
-            Image{
-                id:logoBuyuksehir
-                anchors.right: parent.right
-                anchors.topMargin: 5
-                anchors.rightMargin:5
-                anchors.top:parent.top
-                source:"qrc:/img/kayseriBBLogo.png"
-                height: parent.height - 10
-                fillMode: Image.PreserveAspectFit
-                mipmap:true
-            }
-            Text{
-                anchors.centerIn: parent
-                text: "İYİ YOLCULUKLAR"
-                font.pixelSize: 24
-                elide: Text.ElideRight
-                antialiasing: true
-                font.hintingPreference: Font.PreferNoHinting
-                style: Text.Normal
-                focus: false
-                font.weight: Font.Bold
-                font.family: "Verdana"
-                color: "white"
-
-            }
             Text {
                 id: timeText
-                font.pixelSize: 24
+                font.pixelSize: 72
                 text: Qt.formatTime(new Date(), "hh:mm")
-                anchors.right: logoBuyuksehir.left
-                anchors.rightMargin: 10
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: 30
+                anchors.top:parent.top
+                anchors.topMargin: 40
+                width:timeText.implicitWidth
+                height:timeText.implicitHeight
                 elide: Text.ElideRight
                 antialiasing: true
                 font.hintingPreference: Font.PreferNoHinting
@@ -111,11 +71,13 @@ Window {
             }
             Text {
                 id: dateText
-                font.pixelSize: 18
-                text: new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \ndddd")
-                anchors.left: logoUlasim.right
-                anchors.leftMargin: 10
-                anchors.verticalCenter: parent.verticalCenter
+                font.pixelSize: 28
+                text: new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \n        dddd")
+                anchors.top: timeText.bottom
+                anchors.topMargin: 50
+                anchors.horizontalCenter: parent.horizontalCenter
+                width:timeText.implicitWidth
+                height:timeText.implicitHeight
                 elide: Text.ElideRight
                 antialiasing: true
                 font.hintingPreference: Font.PreferNoHinting
@@ -125,271 +87,165 @@ Window {
                 font.family: "Verdana"
                 color: "white"
                 function set(){
-                    dateText.text= new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \ndddd");
+                    dateText.text= new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \n        dddd");
                 }
             }
+            z:1
+            Rectangle{
+                id:banners
+                anchors.left:parent.left
+                anchors.right: parent.right
+                anchors.leftMargin:30
+                anchors.rightMargin:30
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 100
+                Image{
+                    id:logoUlasim
+                    anchors.left: parent.left
+                    anchors.right: seperatorBanners.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    source:"qrc:/img/kayseriLogo.png"
+                    width:100
+                    fillMode: Image.PreserveAspectFit
+                    mipmap:true
+                }
+                Rectangle{
+                    id:seperatorBanners
+                    anchors.left: logoUlasim.right
+                    anchors.top:parent.top
+                    anchors.bottom:parent.bottom
+                    width:30
+                    color:"white"
+                }
+
+                Image{
+                    id:logoAlo
+                    anchors.left: seperatorBanners.right
+                    anchors.leftMargin:5
+                    anchors.right:parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    source:"qrc:/img/callcenmterLogo.png"
+                    fillMode: Image.PreserveAspectFit
+                    mipmap:true
+                }
+            }
+
+
+
         }
         Rectangle{
-            id:midArea
-            anchors.left:parent.left
-            anchors.top:topBanner.bottom
-            anchors.bottom:botBanner.top
+            id:rightSide
+            anchors.left: leftSide.right
             anchors.right:parent.right
-            anchors.margins: 15
-            color: "transparent"
-            Image{
-                id:backgroundImageMidArea
-                anchors.fill: parent
-                source:"/img/backgroundHalfOpacity.png"
-                mipmap:true
-            }
+            anchors.top:parent.top
+            anchors.bottom:parent.bottom
+            color:"transparent"
             Rectangle{
-                id:highlightedArea
-                anchors.right: parent.right
-                anchors.top:parent.top
-                anchors.bottom:parent.bottom
-                width:parent.width * .4
-                color:"transparent"
-
-
-                ListModel{
-                    id: duraklar
-                    ListElement{
-                        name:"Durak1"
-                    }
-                    ListElement{
-                        name:"Durak2"
-                    }
-                    ListElement{
-                        name:"Durak3"
-                    }
-                    ListElement{
-                        name:"Durak4"
-                    }
-                    ListElement{
-                        name:"Durak5"
-                    }
-                    ListElement{
-                        name:"Durak6"
-                    }
-
-                }
-
-                ListView{
-                    id:myListview
-                    anchors.fill: parent
-
-                    model: duraklar
-                    focus:true
-                    spacing:(highlightedArea.height / 7)/5
-                    delegate:
-                        Rectangle{
-                            width:highlightedArea.width
-                            height:highlightedArea.height / 7
+                            id:highlightedArea
+                            anchors.left: parent.left
+                            anchors.leftMargin:143
+                            anchors.top:parent.top
+                            anchors.topMargin:42
+                            anchors.bottom:parent.bottom
+                            width:parent.width * .4
                             color:"transparent"
 
-                            Image{
+
+                            ListModel{
+                                id: duraklar
+                                ListElement{
+                                    name:"Durak1"
+                                }
+                                ListElement{
+                                    name:"Durak2"
+                                }
+                                ListElement{
+                                    name:"Durak3"
+                                }
+                                ListElement{
+                                    name:"Durak4"
+                                }
+
+
+                            }
+
+                            ListView{
+                                id:myListview
                                 anchors.fill: parent
-                                source:(duraklar.get(duraklar.count/duraklar.count).name === name) ? "qrc:/img/backgroundHalfOpacity.png" : (duraklar.get(0).name === name)? "qrc:/img/backgroundredHalfOpacity.png" : "qrc:/img/backgroundgreenHalfOpacity.png"
+
+                                model: duraklar
+                                focus:true
+                                spacing:48
+                                delegate:
+                                    Rectangle{
+                                        width:highlightedArea.width
+                                        height:highlightedArea.height / 7
+                                        color:"transparent"
+
+                                        Text{
+                                            text: name
+                                            font.capitalization: Font.AllUppercase
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            elide: Text.ElideNone
+                                            antialiasing: true
+                                            font.hintingPreference: Font.PreferNoHinting
+                                            style: Text.Normal
+                                            focus: false
+                                            font.weight: Font.Bold
+                                            font.pixelSize:(duraklar.get(0/duraklar.count).name === name) ? 72 : 48
+                                            font.family: "Verdana"
+                                            color: (duraklar.get(0).name === name) ? ((root.pulse === true)? "gray":"cyan") : (duraklar.get(0/duraklar.count).name === name)? "gray" : "black"
+                                        }
+
+
+                                    }
+
+
+                                populate: Transition{
+                                    NumberAnimation{
+                                        properties:"x,y";
+                                        duration:300
+                                    }
+                                }
+                                add: Transition{
+
+                                    NumberAnimation {
+                                        property:"x";
+                                        from:1500;
+                                        to: 0;
+                                        duration:1000
+                                    }
+                                    NumberAnimation {
+                                        property:"opacity";
+                                        from:0;
+                                        to: 1.0;
+                                        duration:1000
+                                    }
+
+
+
+                                }
+
+                                remove: Transition{
+
+                                    NumberAnimation {
+                                        property:"x";
+                                        from:0;
+                                        to: -1500;
+                                        duration:1000
+                                    }
+                                    NumberAnimation {
+                                        property:"opacity";
+                                        from:1.0;
+                                        to: 0;
+                                        duration:1000
+                                    }
+
+
+                                }
                             }
-                            Text{
-                                text: name
-                                font.capitalization: Font.AllUppercase
-                                anchors.verticalCenter: parent.verticalCenter
-                                elide: Text.ElideNone
-                                antialiasing: true
-                                font.hintingPreference: Font.PreferNoHinting
-                                style: Text.Normal
-                                focus: false
-                                font.weight: Font.Bold
-                                font.pixelSize: 48
-                                font.family: "Verdana"
-                                color: (duraklar.get(duraklar.count/duraklar.count).name === name) ? ((root.pulse === true)? "gray":"white") : (duraklar.get(0).name === name)? "gray" : "white"
-                            }
-
-
                         }
-
-
-                    populate: Transition{
-                        NumberAnimation{
-                            properties:"x,y";
-                            duration:300
-                        }
-                    }
-                    add: Transition{
-
-                        NumberAnimation {
-                            property:"x";
-                            from:1500;
-                            to: 0;
-                            duration:1000
-                        }
-                        NumberAnimation {
-                            property:"opacity";
-                            from:0;
-                            to: 1.0;
-                            duration:1000
-                        }
-
-
-
-                    }
-
-                    remove: Transition{
-
-                        NumberAnimation {
-                            property:"x";
-                            from:0;
-                            to: -1500;
-                            duration:1000
-                        }
-                        NumberAnimation {
-                            property:"opacity";
-                            from:1.0;
-                            to: 0;
-                            duration:1000
-                        }
-
-
-                    }
-                }
-            }
-            Rectangle{
-                id:stationArea
-                anchors.left: parent.left
-                anchors.top:parent.top
-                anchors.bottom:parent.bottom
-                width:parent.width * .6
-                color:"transparent"
-                Text{
-                    id: stationInfo
-                    font.pixelSize: 72
-                    height: 60
-                    text: duraklar.get(1).name
-                    anchors.left: parent.left
-                    anchors.leftMargin: 10
-                    anchors.right:parent.right
-                    anchors.rightMargin:10
-                    anchors.verticalCenter: parent.verticalCenter
-                    elide: Text.ElideRight
-                    antialiasing: true
-                    font.hintingPreference: Font.PreferNoHinting
-                    style: Text.Normal
-                    focus: false
-                    font.weight: Font.Bold
-                    font.family: "Verdana"
-                    color: "white"
-                    font.capitalization: Font.AllUppercase
-                }
-                Text{
-                    id: stationTypetext
-                    font.pixelSize: 40
-                    height: stationTypetext.implicitHeight
-                    text: ""
-                    anchors.left: parent.left
-                    anchors.leftMargin: 10
-                    anchors.bottom:stationInfo.top
-                    anchors.bottomMargin: 20
-                    elide: Text.ElideRight
-                    antialiasing: true
-                    font.hintingPreference: Font.PreferNoHinting
-                    style: Text.Normal
-                    focus: false
-                    font.weight: Font.Bold
-                    font.family: "Verdana"
-                    color: "cyan"
-                    font.capitalization: Font.AllUppercase
-                }
-
-
-            }
-
-
-
         }
-        Rectangle{
-
-            id:botBanner
-            anchors.left:parent.left
-            anchors.bottom:parent.bottom
-            width: parent.width
-            height: topBanner.height /2
-            color: "transparent"
-            z:1
-            Image{
-                id:backgroundImageBotBanner
-                anchors.fill: parent
-                source:"/img/backgroundHalfOpacity.png"
-                mipmap:true
-            }
-            Image{
-                id:logoInstagram
-                anchors.right: hastagInstagram.left
-                anchors.rightMargin:5
-                source:"/img/instaLogo.png"
-                height: topBanner.height /2 -5
-                fillMode:Image.PreserveAspectFit
-                mipmap:true
-                z:2
-            }
-            Text{
-                id:hastagInstagram
-                anchors.right:logoTwitter.left
-                anchors.rightMargin:5
-                anchors.verticalCenter: logoInstagram.verticalCenter
-                text:"@ulasimkayseri"
-                font.pixelSize: 18
-                elide: Text.ElideLeft
-                antialiasing: true
-                font.hintingPreference: Font.PreferNoHinting
-                style: Text.Normal
-                focus: false
-                font.weight: Font.Medium
-                font.family: "Verdana"
-                color: "white"
-            }
-            Image{
-                id:logoTwitter
-                anchors.centerIn: parent
-                source:"/img/twitterLogo.png"
-                height: topBanner.height /2 -5
-                fillMode:Image.PreserveAspectFit
-                mipmap:true
-                z:2
-            }
-            Text{
-                id:hastagTwitter
-                anchors.left:logoTwitter.right
-                anchors.leftMargin:5
-                anchors.verticalCenter: logoTwitter.verticalCenter
-                text:"@UlasimKayseri"
-                font.pixelSize: 18
-                elide: Text.ElideLeft
-                antialiasing: true
-                font.hintingPreference: Font.PreferNoHinting
-                style: Text.Normal
-                focus: false
-                font.weight: Font.Medium
-                font.family: "Verdana"
-                color: "white"
-            }
-            Image{
-                id:logoCallCenter
-                anchors.left:parent.left
-                anchors.rightMargin: 5
-                anchors.verticalCenter: parent.verticalCenter
-                source:"/img/callcenmterLogo.png"
-                height: topBanner.height /2 -5
-                fillMode:Image.PreserveAspectFit
-                mipmap:true
-                z:2
-            }
-
-
-
-        }
-
     }
     Rectangle{
         id:blackArea
@@ -475,12 +331,9 @@ Window {
         }
     }
     property bool pulse : false;
-
     property bool currentStation : false;
-
     property bool switchOk : true;
-    property int durakCounter: 7;
-
+    property int durakCounter: 5;
     property int stage :2
     Timer {
         id: listUpdater
@@ -504,15 +357,12 @@ Window {
                 }
             }
 
-             stationInfo.text=(duraklar.get(1).name)
             if(root.switchOk){
             if(root.currentStation){
-                stationTypetext.text = "ŞİMDİKİ DURAK"
-                playerSound.source = "file:///C:/PISduraklar/example.mp3"
+                playerSound.source = "file:///C:/PISduraklar/ANAFARTALAR.mp3"
                 root.soundEnd = true
                 root.stage=1
             }else{
-                stationTypetext.text = "SIRADAKİ DURAK"
                 playerSound.source = "file:///C:/PISduraklar/next_station.mp3"
                 root.soundEnd = false
                 root.stage=2
@@ -530,7 +380,7 @@ Window {
                 if(soundEnd){
                     playerSound.source = ""
                 }else{
-                    playerSound.source = "file:///C:/PISduraklar/example.mp3"
+                    playerSound.source = "file:///C:/PISduraklar/ANAFARTALAR.mp3"
                     root.soundEnd = true
                 }
             }
