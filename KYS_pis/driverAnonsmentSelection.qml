@@ -1,6 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import QtMultimedia
+import QtMultimedia 5.15
 Item {
     Rectangle {
         id:rectangleAnonuncement
@@ -108,7 +108,7 @@ Item {
                 disableButtonClick: false
                 buttonText: ""
                 onButtonClicked:{
-                    playerSound.source="file:///C:/PISanonslar/priority.mp3"
+                    playerSound.source="file:///C:/appKYS_Pis/PISanonslar/priority.mp3"
 
                 }
             }
@@ -288,8 +288,7 @@ Item {
     }
     MediaPlayer {
         id: playerSound
-        audioOutput: audio
-        onMediaStatusChanged: {
+        onStatusChanged: {
             if (playerSound.mediaStatus == MediaPlayer.EndOfMedia) {
                 playerSound.source = ""
             }
@@ -299,8 +298,9 @@ Item {
         }
 
     }
-    AudioOutput{
+    Audio{
         id:audio
+        source:playerSound
     }
 
 

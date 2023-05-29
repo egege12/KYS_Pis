@@ -11,20 +11,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Quick)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Quick)
-find_package(Qt6 REQUIRED COMPONENTS QuickControls2)
-find_package(Qt6 6.4 REQUIRED COMPONENTS Quick)
-find_package(Qt6 REQUIRED COMPONENTS Multimedia)
+find_package(Qt5 REQUIRED COMPONENTS QuickControls2)
+find_package(Qt5 REQUIRED COMPONENTS Quick)
+find_package(Qt5 REQUIRED COMPONENTS Multimedia)
 
-qt_standard_project_setup()
 
-qt_add_executable(appKYS_Pis
+
+add_executable(appKYS_Pis
     qml.qrc
     main.cpp
 
 )
 
-target_link_libraries(appKYS_Pis
-  PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick)
+
 set_target_properties(appKYS_Pis PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
@@ -41,9 +40,9 @@ set_target_properties(appKYS_Pis PROPERTIES
 )
 
 target_link_libraries(appKYS_Pis
-    PRIVATE Qt6::Quick
+    PRIVATE Qt5::Quick
 )
-target_link_libraries(appKYS_Pis PRIVATE Qt6::Multimedia)
+target_link_libraries(appKYS_Pis PRIVATE Qt5::Multimedia)
 install(TARGETS appKYS_Pis
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

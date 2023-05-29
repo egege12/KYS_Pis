@@ -7,8 +7,8 @@ Window {
     height: 600
     color: "white"
     Component.onCompleted: {
-        x= Qt.application.screens[1].virtualX;
-        y= Qt.application.screens[1].virtualY;
+        x= Qt.application.screens[0].virtualX;
+        y= Qt.application.screens[0].virtualY;
     }
     flags: Qt.FramelessWindowHint | Qt.Window | Qt.MaximizeUsingFullscreenGeometryHint
 
@@ -20,48 +20,48 @@ Window {
     property string currentStationName :"Bilinmiyor"
 
     //
+//    Rectangle {
+//        id:testArea
+//        anchors.left:parent.left
+//        anchors.top:parent.top
+//        width: parent.width
+//        height: 40
+//        color: "white"
+//        ButtonBar{
+//            id:windowButtonBar
+//            anchors.top: parent.top
+//            anchors.topMargin:1
+//            anchors.right:parent.right
+//            anchors.rightMargin:1
+//            onFullScreenClicked:{
+//                if(fullscreen === true){
+//                    root.showNormal()
+//                }else{
+//                    root.showFullScreen()
+//                }
+//                fullscreen= !fullscreen}
+//            onIconSizeClicked: {
+//                if(iconSize === true){
+//                    root.showNormal()
+//                }else{
+//                    root.showMinimized()
+//                }
+//                iconSize= !iconSize}
+//            onEscapeClicked: Qt.quit()
+
+//        }
+//    }
+
     Rectangle {
-        id:testArea
         anchors.left:parent.left
         anchors.top:parent.top
         width: parent.width
-        height: 40
-        color: "white"
-        ButtonBar{
-            id:windowButtonBar
-            anchors.top: parent.top
-            anchors.topMargin:1
-            anchors.right:parent.right
-            anchors.rightMargin:1
-            onFullScreenClicked:{
-                if(fullscreen === true){
-                    root.showNormal()
-                }else{
-                    root.showFullScreen()
-                }
-                fullscreen= !fullscreen}
-            onIconSizeClicked: {
-                if(iconSize === true){
-                    root.showNormal()
-                }else{
-                    root.showMinimized()
-                }
-                iconSize= !iconSize}
-            onEscapeClicked: Qt.quit()
-
-        }
-    }
-    Rectangle {
-        anchors.left:parent.left
-        anchors.top:testArea.bottom
-        width: parent.width
-        height: 540
+        height: 600
         color: "transparent"
         Image{
             id:backgroundImageLeftMAin
             anchors.fill: parent
             source:"qrc:/img/driverBackground.png"
-
             mipmap:true
             z:0
         }
@@ -73,6 +73,13 @@ Window {
             width: parent.width
             height: parent.height * 0.12
             color: "transparent"
+            MouseArea{
+                anchors.fill: parent
+                onClicked: {
+                    Qt.quit()
+                }
+            }
+
             Image{
                 id:backgroundImageTopBanner
                 anchors.fill: parent

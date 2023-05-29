@@ -9,16 +9,8 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
     // Birinci QML dosyası ekleme
-    const QUrl url(u"qrc:/Main.qml"_qs);
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
-        &app, []() { QCoreApplication::exit(-1); },
-        Qt::QueuedConnection);
+    const QUrl url("qrc:/Main.qml");
 
-    // İkinci QML dosyası ekleme
-    const QUrl url2(u"qrc:/Secondary.qml"_qs);
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
-        &app, []() { QCoreApplication::exit(-1); },
-        Qt::QueuedConnection);
 
     engine.load(url);
 

@@ -1,10 +1,10 @@
-
 import QtQuick.Window 2.3
 import QtQuick 2.3
 import QtQuick.Controls 2.15
-import QtMultimedia
+import QtMultimedia 5.15
 import QtQml.Models 2.2
-import Qt.labs.folderlistmodel 2.4
+import Qt.labs.folderlistmodel 2.15
+
 Window {
     id:root
     visible: true
@@ -12,8 +12,8 @@ Window {
     height: 540
     color: "white"
     Component.onCompleted: {
-        x= Qt.application.screens[0].virtualX;
-        y= Qt.application.screens[0].virtualY;
+        x= Qt.application.screens[1].virtualX;
+        y= Qt.application.screens[1].virtualY;
     }
     flags: Qt.FramelessWindowHint | Qt.Window | Qt.MaximizeUsingFullscreenGeometryHint
     Loader {
@@ -252,7 +252,6 @@ Window {
         height:parent.height
         width: 30
         anchors.left: infoArea.right
-        anchors.right:videoutput.left
         color:"black"
     }
 
@@ -268,24 +267,30 @@ Window {
 
         FolderListModel {
             id: folderModel
-            folder: "file:///C:/PISVideolar"
-            nameFilters: ["*.mp4"]
 
+            folder: "file:///C:/appKYS_Pis/PISVideolar"
+            nameFilters: ["*.mp4"]
+            onStatusChanged: {
+                if(videoArea.mediaIndex > (folderModel.count-1))
+                    videoArea.mediaIndex=0
+            }
         }
 
         MediaPlayer {
             id: player
-            videoOutput: videoutput
-            onMediaStatusChanged: {
-                if (player.mediaStatus == MediaPlayer.EndOfMedia) {
+            muted: true
+            onStatusChanged: {
+                if (player.status == MediaPlayer.EndOfMedia) {
                     player.source = folderModel.get(videoArea.mediaIndex,"filePath")
                     if(videoArea.mediaIndex < (folderModel.count-1))
                         videoArea.mediaIndex++
                     else
                         videoArea.mediaIndex=0
+                }else if(player.mediaStatus === MediaPlayer.InvalidMedia || player.mediaStatus === MediaPlayer.NoMedia ){
+                    videoArea.mediaIndex=0
                 }
-
             }
+
             onSourceChanged: {
                 player.play();
                 console.log("onsourcechanged");
@@ -295,9 +300,10 @@ Window {
         }
 
         VideoOutput {
-            id:videoutput
-            anchors.fill: parent
-        }
+               anchors.fill: parent
+               source: player
+               fillMode: VideoOutput.PreserveAspectCrop
+           }
     }
 
     Timer {
@@ -321,7 +327,7 @@ Window {
     }
     Timer {
         id:videoStarter
-        interval:5000
+        interval:2000
         repeat:false
         running: true
         onTriggered: {
@@ -359,11 +365,11 @@ Window {
 
             if(root.switchOk){
             if(root.currentStation){
-                playerSound.source = "file:///C:/PISduraklar/ANAFARTALAR.mp3"
+                playerSound.source = "file:///C:/appKYS_Pis/PISduraklar/example.mp3"
                 root.soundEnd = true
                 root.stage=1
             }else{
-                playerSound.source = "file:///C:/PISduraklar/next_station.mp3"
+                playerSound.source = "file:///C:/appKYS_Pis/PISduraklar/next_station.mp3"
                 root.soundEnd = false
                 root.stage=2
             }
@@ -374,13 +380,13 @@ Window {
     property bool soundEnd: false;
     MediaPlayer {
         id: playerSound
-        audioOutput: audio
-        onMediaStatusChanged: {
+        autoLoad:false
+        onStatusChanged: {
             if (playerSound.mediaStatus == MediaPlayer.EndOfMedia) {
                 if(soundEnd){
                     playerSound.source = ""
                 }else{
-                    playerSound.source = "file:///C:/PISduraklar/ANAFARTALAR.mp3"
+                    playerSound.source = "file:///C:/appKYS_Pis/PISduraklar/example.mp3"
                     root.soundEnd = true
                 }
             }
@@ -389,9 +395,6 @@ Window {
             playerSound.play();
         }
 
-    }
-    AudioOutput{
-        id:audio
     }
 
 }
