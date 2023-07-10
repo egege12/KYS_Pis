@@ -20,9 +20,10 @@ find_package(Qt5 REQUIRED COMPONENTS Multimedia)
 add_executable(appKYS_Pis
     qml.qrc
     main.cpp
-
+    endPointsClass.h
+    workerObject.h
+    workerObject.cpp
 )
-
 
 set_target_properties(appKYS_Pis PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
@@ -38,6 +39,7 @@ set_target_properties(appKYS_Pis PROPERTIES
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
+
 
 target_link_libraries(appKYS_Pis
     PRIVATE Qt5::Quick
