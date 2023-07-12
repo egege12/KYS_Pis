@@ -4,8 +4,9 @@
 #define ENDPOINTSCLASS_H
 
 #include "qobject.h"
-
-
+#include <QFile>
+#include <QList>
+#include <QDateTime>
 
 class endPointsClass: public QObject{
 
@@ -20,9 +21,13 @@ class endPointsClass: public QObject{
     Q_PROPERTY(bool stateNoGpsInfo READ stateNoGpsInfo WRITE setStateNoGpsInfo NOTIFY stateNoGpsInfoChanged)
     Q_PROPERTY(bool stateNoStationInfo READ stateNoStationInfo WRITE setStateNoStationInfo NOTIFY stateNoStationInfoChanged)
     Q_PROPERTY(bool stateUpdating READ stateUpdating WRITE setStateUpdating NOTIFY stateUpdatingChanged)
+    Q_PROPERTY(QString errCode READ errCode WRITE setErrCode NOTIFY errCodeChanged)
 
+    QList<QString> errList{0};
 
 public:
+    endPointsClass(QObject *parent = nullptr);
+
     bool stateNoInit() const;
     void setStateNoInit(bool newStateNoInit);
 
@@ -50,6 +55,9 @@ public:
     bool stateUpdating() const;
     void setStateUpdating(bool newStateUpdating);
 
+    QString errCode() const;
+    void seterrCode(const QString &newErrCode);
+
 signals:
     void stateNoInitChanged();
 
@@ -69,6 +77,8 @@ signals:
 
     void stateUpdatingChanged();
 
+    void errCodeChanged();
+
 private:
     bool m_stateNoInit;
     bool m_stateNoFolderFound;
@@ -79,6 +89,7 @@ private:
     bool m_stateNoGpsInfo;
     bool m_stateNoStationInfo;
     bool m_stateUpdating;
+    QString m_errCode;
 };
 
 #endif // ENDPOINTSCLASS_H
@@ -198,4 +209,25 @@ inline void endPointsClass::setStateUpdating(bool newStateUpdating)
         return;
     m_stateUpdating = newStateUpdating;
     emit stateUpdatingChanged();
+}
+
+inline QString endPointsClass::errCode() const
+{
+    return m_errCode;
+}
+
+inline void endPointsClass::seterrCode(const QString &newErrCode)
+{
+    if (m_errCode == newErrCode)
+        return;
+    m_errCode = newErrCode;
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    QString formattedDateTime = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
+    errList.append("["+formattedDateTime+"]"+m_errCode);
+    emit errCodeChanged();
+}
+
+inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
+{
+
 }
