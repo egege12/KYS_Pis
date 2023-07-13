@@ -7,20 +7,21 @@
 
 int main(int argc, char *argv[])
 {
+    QGuiApplication app(argc, argv);
     //Thread spread
     QThread workerThread;
     endPointsClass *const endPoints = new endPointsClass;
     QThread::currentThread()->setObjectName("Main Thread");
     workerThread.setObjectName("Backend Thread");
 
-    workerObject serviceObj(nullptr,endPoints);
+    workerObject serviceObj(&app,endPoints);
     serviceObj.moveToThread(&workerThread);
 
     QObject::connect(&workerThread, SIGNAL(started()), &serviceObj, SLOT(startObject()));
     QObject::connect(&workerThread, SIGNAL(finished()), &serviceObj, SLOT(stopObject()));
     workerThread.start();
+    QObject::connect(QThread::currentThread(), SIGNAL(quit()), &workerThread, SLOT(quit()));
 
-    QGuiApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
 

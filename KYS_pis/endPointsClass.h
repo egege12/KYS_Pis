@@ -22,10 +22,12 @@ class endPointsClass: public QObject{
     Q_PROPERTY(bool stateNoStationInfo READ stateNoStationInfo WRITE setStateNoStationInfo NOTIFY stateNoStationInfoChanged)
     Q_PROPERTY(bool stateUpdating READ stateUpdating WRITE setStateUpdating NOTIFY stateUpdatingChanged)
     Q_PROPERTY(QString errCode READ errCode WRITE setErrCode NOTIFY errCodeChanged)
-
-    QList<QString> errList{0};
+    Q_PROPERTY(bool updateStations READ updateStations WRITE setUpdateStations NOTIFY updateStationsChanged)
+    Q_PROPERTY(bool updatingStations READ updatingStations WRITE setUpdatingStations NOTIFY updatingStationsChanged)
 
 public:
+
+    QList<QString> errList{0};
     endPointsClass(QObject *parent = nullptr);
 
     bool stateNoInit() const;
@@ -56,7 +58,13 @@ public:
     void setStateUpdating(bool newStateUpdating);
 
     QString errCode() const;
-    void seterrCode(const QString &newErrCode);
+    void setErrCode(const QString &newErrCode);
+
+    bool updateStations() const;
+    void setupdateStations(bool newUpdateStations);
+
+    bool updatingStations() const;
+    void setupdatingStations(bool newUpdatingStations);
 
 signals:
     void stateNoInitChanged();
@@ -79,6 +87,10 @@ signals:
 
     void errCodeChanged();
 
+    void updateStationsChanged();
+
+    void updatingStationsChanged();
+
 private:
     bool m_stateNoInit;
     bool m_stateNoFolderFound;
@@ -90,9 +102,11 @@ private:
     bool m_stateNoStationInfo;
     bool m_stateUpdating;
     QString m_errCode;
+    bool m_updateStations;
+    bool m_updatingStations;
 };
 
-#endif // ENDPOINTSCLASS_H
+
 
 inline bool endPointsClass::stateNoInit() const
 {
@@ -216,7 +230,7 @@ inline QString endPointsClass::errCode() const
     return m_errCode;
 }
 
-inline void endPointsClass::seterrCode(const QString &newErrCode)
+inline void endPointsClass::setErrCode(const QString &newErrCode)
 {
     if (m_errCode == newErrCode)
         return;
@@ -230,4 +244,31 @@ inline void endPointsClass::seterrCode(const QString &newErrCode)
 inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
 {
 
+}
+#endif // ENDPOINTSCLASS_H
+
+inline bool endPointsClass::updateStations() const
+{
+    return m_updateStations;
+}
+
+inline void endPointsClass::setupdateStations(bool newUpdateStations)
+{
+    if (m_updateStations == newUpdateStations)
+        return;
+    m_updateStations = newUpdateStations;
+    emit updateStationsChanged();
+}
+
+inline bool endPointsClass::updatingStations() const
+{
+    return m_updatingStations;
+}
+
+inline void endPointsClass::setupdatingStations(bool newUpdatingStations)
+{
+    if (m_updatingStations == newUpdatingStations)
+        return;
+    m_updatingStations = newUpdatingStations;
+    emit updatingStationsChanged();
 }
