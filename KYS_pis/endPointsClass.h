@@ -7,6 +7,13 @@
 #include <QFile>
 #include <QList>
 #include <QDateTime>
+#include <QMap>
+struct station{
+    QString id;
+    QString name;
+    QString latitude;
+    QString longitude;
+};
 
 class endPointsClass: public QObject{
 
@@ -21,13 +28,26 @@ class endPointsClass: public QObject{
     Q_PROPERTY(bool stateNoGpsInfo READ stateNoGpsInfo WRITE setStateNoGpsInfo NOTIFY stateNoGpsInfoChanged)
     Q_PROPERTY(bool stateNoStationInfo READ stateNoStationInfo WRITE setStateNoStationInfo NOTIFY stateNoStationInfoChanged)
     Q_PROPERTY(bool stateUpdating READ stateUpdating WRITE setStateUpdating NOTIFY stateUpdatingChanged)
+    Q_PROPERTY(bool stateNetwork READ stateNetwork WRITE setStateNetwork NOTIFY stateNetworkChanged)
     Q_PROPERTY(QString errCode READ errCode WRITE setErrCode NOTIFY errCodeChanged)
+
+    Q_PROPERTY(bool dataImported READ dataImported WRITE setDataImported NOTIFY dataImportedChanged)
+    Q_PROPERTY(bool folderStructureOK READ folderStructureOK WRITE setFolderStructureOK NOTIFY folderStructureOKChanged)
     Q_PROPERTY(bool updateStations READ updateStations WRITE setUpdateStations NOTIFY updateStationsChanged)
     Q_PROPERTY(bool updatingStations READ updatingStations WRITE setUpdatingStations NOTIFY updatingStationsChanged)
 
+    Q_PROPERTY(bool lineSelected READ lineSelected WRITE setLineSelected NOTIFY lineSelectedChanged)
+    Q_PROPERTY(QString currentLine READ currentLine WRITE setCurrentLine NOTIFY currentLineChanged)
+    Q_PROPERTY(QString currentDirection READ currentDirection WRITE setCurrentDirection NOTIFY currentDirectionChanged)
+    Q_PROPERTY(QString currentStation READ currentStation WRITE setCurrentStation NOTIFY currentStationChanged)
+    Q_PROPERTY(QString nextStation READ nextStation WRITE setNextStation NOTIFY nextStationChanged)
+
+    Q_PROPERTY(QString currentSpecialAnounce READ currentSpecialAnounce WRITE setCurrentSpecialAnounce NOTIFY currentSpecialAnounceChanged)
 public:
+    struct station;
 
     QList<QString> errList{0};
+    QMap<QString,QList<station>> currentLineStations;
     endPointsClass(QObject *parent = nullptr);
 
     bool stateNoInit() const;
@@ -61,10 +81,39 @@ public:
     void setErrCode(const QString &newErrCode);
 
     bool updateStations() const;
-    void setupdateStations(bool newUpdateStations);
+    void setUpdateStations(bool newUpdateStations);
 
     bool updatingStations() const;
-    void setupdatingStations(bool newUpdatingStations);
+    void setUpdatingStations(bool newUpdatingStations);
+
+    bool stateNetwork() const;
+    void setstateNetwork(bool newStateNetwork);
+
+    QString currentLine() const;
+    void setCurrentLine(const QString &newCurrentLine);
+
+    QString currentStation() const;
+    void setCurrentStation(const QString &newCurrentStation);
+
+    QString currentSpecialAnounce() const;
+    void setCurrentSpecialAnounce(const QString &newCurrentSpecialAnounce);
+
+    QString currentDirection() const;
+    void setCurrentDirection(const QString &newCurrentDirection);
+
+    QString nextStation() const;
+    void setnextStation(const QString &newNextStation);
+
+    void setNextStation(const QString &newNextStation);
+
+    bool lineSelected() const;
+    void setLineSelected(bool newLineSelected);
+
+    bool dataImported() const;
+    void setDataImported(bool newDataImported);
+
+    bool folderStructureOK() const;
+    void setFolderStructureOK(bool newFolderStructureOK);
 
 signals:
     void stateNoInitChanged();
@@ -91,6 +140,24 @@ signals:
 
     void updatingStationsChanged();
 
+    void stateNetworkChanged();
+
+    void currentLineChanged();
+
+    void currentStationChanged();
+
+    void currentSpecialAnounceChanged();
+
+    void currentDirectionChanged();
+
+    void nextStationChanged();
+
+    void lineSelectedChanged();
+
+    void dataImportedChanged();
+
+    void folderStructureOKChanged();
+
 private:
     bool m_stateNoInit;
     bool m_stateNoFolderFound;
@@ -104,6 +171,15 @@ private:
     QString m_errCode;
     bool m_updateStations;
     bool m_updatingStations;
+    bool m_stateNetwork;
+    QString m_currentLine;
+    QString m_currentStation;
+    QString m_currentSpecialAnounce;
+    QString m_currentDirection;
+    QString m_nextStation;
+    bool m_lineSelected;
+    bool m_dataImported;
+    bool m_folderStructureOK;
 };
 
 
@@ -252,7 +328,7 @@ inline bool endPointsClass::updateStations() const
     return m_updateStations;
 }
 
-inline void endPointsClass::setupdateStations(bool newUpdateStations)
+inline void endPointsClass::setUpdateStations(bool newUpdateStations)
 {
     if (m_updateStations == newUpdateStations)
         return;
@@ -265,10 +341,139 @@ inline bool endPointsClass::updatingStations() const
     return m_updatingStations;
 }
 
-inline void endPointsClass::setupdatingStations(bool newUpdatingStations)
+inline void endPointsClass::setUpdatingStations(bool newUpdatingStations)
 {
     if (m_updatingStations == newUpdatingStations)
         return;
     m_updatingStations = newUpdatingStations;
     emit updatingStationsChanged();
+}
+
+inline bool endPointsClass::stateNetwork() const
+{
+    return m_stateNetwork;
+}
+
+inline void endPointsClass::setstateNetwork(bool newStateNetwork)
+{
+    if (m_stateNetwork == newStateNetwork)
+        return;
+    m_stateNetwork = newStateNetwork;
+    if(!m_stateNetwork){
+        setErrCode("İnternet bağlantısı kesildi");
+    }else
+        setErrCode("İnternet bağlantısı sağlandı");
+    emit stateNetworkChanged();
+}
+
+inline QString endPointsClass::currentLine() const
+{
+    return m_currentLine;
+}
+
+inline void endPointsClass::setCurrentLine(const QString &newCurrentLine)
+{
+    if (m_currentLine == newCurrentLine)
+        return;
+    m_currentLine = newCurrentLine;
+    emit currentLineChanged();
+}
+
+inline QString endPointsClass::currentStation() const
+{
+    return m_currentStation;
+}
+
+inline void endPointsClass::setCurrentStation(const QString &newCurrentStation)
+{
+    if (m_currentStation == newCurrentStation)
+        return;
+    m_currentStation = newCurrentStation;
+    emit currentStationChanged();
+}
+
+inline QString endPointsClass::currentSpecialAnounce() const
+{
+    return m_currentSpecialAnounce;
+}
+
+inline void endPointsClass::setCurrentSpecialAnounce(const QString &newCurrentSpecialAnounce)
+{
+    if (m_currentSpecialAnounce == newCurrentSpecialAnounce)
+        return;
+    m_currentSpecialAnounce = newCurrentSpecialAnounce;
+    emit currentSpecialAnounceChanged();
+}
+
+inline QString endPointsClass::currentDirection() const
+{
+    return m_currentDirection;
+}
+
+inline void endPointsClass::setCurrentDirection(const QString &newCurrentDirection)
+{
+    if (m_currentDirection == newCurrentDirection)
+        return;
+    m_currentDirection = newCurrentDirection;
+    emit currentDirectionChanged();
+}
+
+inline QString endPointsClass::nextStation() const
+{
+    return m_nextStation;
+}
+
+inline void endPointsClass::setnextStation(const QString &newNextStation)
+{
+    if (m_nextStation == newNextStation)
+        return;
+    m_nextStation = newNextStation;
+    emit nextStationChanged();
+}
+
+inline void endPointsClass::setNextStation(const QString &newNextStation)
+{
+    if (m_nextStation == newNextStation)
+        return;
+    m_nextStation = newNextStation;
+    emit nextStationChanged();
+}
+
+inline bool endPointsClass::lineSelected() const
+{
+    return m_lineSelected;
+}
+
+inline void endPointsClass::setLineSelected(bool newLineSelected)
+{
+    if (m_lineSelected == newLineSelected)
+        return;
+    m_lineSelected = newLineSelected;
+    emit lineSelectedChanged();
+}
+
+inline bool endPointsClass::dataImported() const
+{
+    return m_dataImported;
+}
+
+inline void endPointsClass::setDataImported(bool newDataImported)
+{
+    if (m_dataImported == newDataImported)
+        return;
+    m_dataImported = newDataImported;
+    emit dataImportedChanged();
+}
+
+inline bool endPointsClass::folderStructureOK() const
+{
+    return m_folderStructureOK;
+}
+
+inline void endPointsClass::setFolderStructureOK(bool newFolderStructureOK)
+{
+    if (m_folderStructureOK == newFolderStructureOK)
+        return;
+    m_folderStructureOK = newFolderStructureOK;
+    emit folderStructureOKChanged();
 }

@@ -1,5 +1,5 @@
-//https://kaktusmobile.kayseriulasim.com.tr/api/LineStops?lineId=643&direction=1
 //
+//this->endPoints->setErrCode("İnternet bağlantısı mevcut değil.");
 #include "workerobject.h"
 
 #include <QFile>
@@ -7,8 +7,13 @@
 #include <QStandardPaths>
 #include <QDateTime>
 #include <QTextStream>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QJsonObject>
+#include <QJsonDocument>
 
-
+#define COM_INTERVAL 1000
+#define CYCLETIMER_INTERVAL 500
 workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
 {
     this->endPoints = endPoints;
@@ -111,19 +116,161 @@ workerObject::~workerObject()
     this->endPoints->errList.clear();
 }
 
+bool workerObject::checkConnection()
+{
+QNetworkAccessManager manager;
+QNetworkRequest request(QUrl("https://www.google.com"));
+
+QNetworkReply *reply = manager.get(request);
+
+if (reply->error() == QNetworkReply::NoError) {
+    // İnternet bağlantısı mevcut
+        return true;
+} else {
+    // İnternet bağlantısı yok veya erişim hatası
+        return false;
+}
+
+delete reply;
+
+
+}
+
+bool workerObject::checkFolderStructure()
+{
+    bool lineCsvOK,JsonFileOK,selectedLineSoundsOk;
+
+{       //Is lineCsvOK ?
+        QString filePath = "C:/appKYS_Pis/PISStations/dataLines.csv"; // Kontrol edilecek dosyanın yolu
+
+        QFile file(filePath);
+        if (file.exists()) {
+           lineCsvOK = true;
+        } else {
+           lineCsvOK = false;
+        }
+}
+{       //Is JsonFileOK ?
+        QString filePath = "C:/appKYS_Pis/PISStations/dataStations.json"; // Kontrol edilecek dosyanın yolu
+
+        QFile file(filePath);
+        if (file.exists()) {
+           JsonFileOK = true;
+        } else {
+           JsonFileOK = false;
+        }
+}
+{       //Is selectedLineSoundsOk ?
+        QString filePath = "C:/appKYS_Pis/PISStations/dataStations.http"; // Kontrol edilecek dosyanın yolu
+
+        QFile file(filePath);
+        if (file.exists()) {
+           JsonFileOK = true;
+        } else {
+           JsonFileOK = false;
+        }
+}
+    return lineCsvOK && JsonFileOK && selectedLineSoundsOk;
+}
+
 void workerObject::startObject()
 {
-    timerOneSec = new QTimer(this);
-    timerOneSec->setInterval(1000);
-    QObject::connect(timerOneSec,&QTimer::timeout,this,&workerObject::writePistoApp,Qt::AutoConnection);
-    QObject::connect(timerOneSec,&QTimer::timeout,this,&workerObject::readApptoPis,Qt::AutoConnection);
-    QObject::connect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::readJSON,Qt::AutoConnection);
-    QObject::connect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::readJSON,Qt::AutoConnection);
+    timer1 = new QTimer(this);
+    timer1->setInterval(COM_INTERVAL);
+    QObject::connect(timer1,&QTimer::timeout,this,&workerObject::rwComApp,Qt::AutoConnection);
+    timer1->start();
+    timer2 = new QTimer(this);
+    timer2->setInterval(CYCLETIMER_INTERVAL);
+    QObject::connect(timer2,&QTimer::timeout,this,&workerObject::cycleCall,Qt::AutoConnection);
+    timer2->start();
+
+    QObject::connect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::readLineLIST,Qt::AutoConnection);
+    QObject::connect(this,&workerObject::donereadLineList,this,&workerObject::sendHttpReq,Qt::AutoConnection);
+    QObject::connect(this,&workerObject::doneReqHTTP,this,&workerObject::readJSON,Qt::AutoConnection);
+    QObject::connect(this,&workerObject::doneReadJSON,this->endPoints,&endPointsClass::setUpdatingStations,Qt::AutoConnection);
+
+
 }
 
 void workerObject::stopObject()
 {
+    QObject::disconnect(timer1,&QTimer::timeout,this,&workerObject::rwComApp);
+    QObject::disconnect(timer2,&QTimer::timeout,this,&workerObject::cycleCall);
+    timer1->stop();
+    timer2->stop();
+    delete timer1;
+    delete timer2;
+    //Nothing here
+    QObject::disconnect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::readLineLIST);
+    QObject::disconnect(this,&workerObject::donereadLineList,this,&workerObject::sendHttpReq);
+    QObject::disconnect(this,&workerObject::doneReqHTTP,this,&workerObject::readJSON);
+    QObject::disconnect(this,&workerObject::doneReadJSON,this->endPoints,&endPointsClass::setUpdatingStations);
+}
 
+void workerObject::sendHttpReq()
+{
+    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+
+    QNetworkRequest request;
+    request.setUrl(QUrl("https://kaktusmobile.kayseriulasim.com.tr/api/LineStops?lineId=643&direction=1"));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QJsonObject jsonRequest;
+
+    QByteArray requestData = QJsonDocument(jsonRequest).toJson();
+
+    QNetworkReply *reply = manager->post(request, requestData);
+    connect(reply, &QNetworkReply::finished, [=]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            QByteArray responseData = reply->readAll();
+            QJsonDocument jsonResponse = QJsonDocument::fromJson(responseData);
+
+            QFile file("response.json");
+            if (file.open(QIODevice::WriteOnly)) {
+                file.write(jsonResponse.toJson());
+                file.close();
+                emit doneReqHTTP();
+            }
+        } else {
+            this->endPoints->setErrCode("HTTP isteği başarısız"+reply->errorString());
+        }
+        reply->deleteLater();
+    });
+}
+
+void workerObject::readJSON()
+{
+
+}
+
+void workerObject::readLineLIST()
+{
+    QFile file("C:/appKYS_Pis/PISStations/dataLines.csv");
+    if(file.open(QIODevice::ReadOnly)){
+        QTextStream *lines = new QTextStream(&file);
+        quint8 lineNumber=0;
+        while(!lines->atEnd()){
+           if (lineNumber > 0){
+               QString line = lines->readLine();
+               this->endPoints->setErrCode("Hatlar başarıyla okundu.Hatlar"+line);
+               this->lines = line.split(",");
+           }
+           ++lineNumber;
+        }
+    }else{
+        checkFolderStructure();
+    }
+}
+
+void workerObject::rwComApp()
+{
+
+}
+
+void workerObject::cycleCall()
+{
+    emit this->endPoints->setstateNetwork(this->checkConnection());
+    emit this->endPoints->setStateNoFolderFound(checkFolderStructure());
 
 
 }
