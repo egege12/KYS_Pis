@@ -8,12 +8,8 @@
 #include <QList>
 #include <QDateTime>
 #include <QMap>
-struct station{
-    QString id;
-    QString name;
-    QString latitude;
-    QString longitude;
-};
+
+
 
 class endPointsClass: public QObject{
 
@@ -43,12 +39,13 @@ class endPointsClass: public QObject{
     Q_PROPERTY(QString nextStation READ nextStation WRITE setNextStation NOTIFY nextStationChanged)
 
     Q_PROPERTY(QString currentSpecialAnounce READ currentSpecialAnounce WRITE setCurrentSpecialAnounce NOTIFY currentSpecialAnounceChanged)
-public:
     struct station;
+public:
+
 
     QList<QString> errList{0};
     QMap<QString,QList<station>> currentLineStations;
-    endPointsClass(QObject *parent = nullptr);
+    explicit endPointsClass(QObject *parent = nullptr);
 
     bool stateNoInit() const;
     void setStateNoInit(bool newStateNoInit);
@@ -87,7 +84,7 @@ public:
     void setUpdatingStations(bool newUpdatingStations);
 
     bool stateNetwork() const;
-    void setstateNetwork(bool newStateNetwork);
+    void setStateNetwork(bool newStateNetwork);
 
     QString currentLine() const;
     void setCurrentLine(const QString &newCurrentLine);
@@ -181,8 +178,17 @@ private:
     bool m_dataImported;
     bool m_folderStructureOK;
 };
+struct  endPointsClass::station{
+    QString id;
+    QString name;
+    QString latitude;
+    QString longitude;
+    QString soundOK;
+};
+inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
+{
 
-
+}
 
 inline bool endPointsClass::stateNoInit() const
 {
@@ -317,11 +323,8 @@ inline void endPointsClass::setErrCode(const QString &newErrCode)
     emit errCodeChanged();
 }
 
-inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
-{
 
-}
-#endif // ENDPOINTSCLASS_H
+
 
 inline bool endPointsClass::updateStations() const
 {
@@ -354,7 +357,7 @@ inline bool endPointsClass::stateNetwork() const
     return m_stateNetwork;
 }
 
-inline void endPointsClass::setstateNetwork(bool newStateNetwork)
+inline void endPointsClass::setStateNetwork(bool newStateNetwork)
 {
     if (m_stateNetwork == newStateNetwork)
         return;
@@ -477,3 +480,6 @@ inline void endPointsClass::setFolderStructureOK(bool newFolderStructureOK)
     m_folderStructureOK = newFolderStructureOK;
     emit folderStructureOKChanged();
 }
+
+
+#endif // ENDPOINTSCLASS_H

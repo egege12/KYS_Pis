@@ -23,20 +23,28 @@ public:
 
     bool checkConnection();
     bool checkFolderStations();
+    bool checkFileLines();
+    bool checkFileJson();
     bool checkFolderVideo();
     bool checkFolderAudioForLines();
     bool checkFolderSpecialAnouncement();
     //If one fails cycle check starts for that
-    bool enableCycleCheckFileLines();
-    bool enableCycleCheckJson();
-    bool enableCycleCheckVideos();
-    bool enableCycleConnectionCheck();
-    bool enableCycleAuidoCheck();
+    void enableCycleCheckFileLines(bool cycleCheckFileLines);
+    void enableCycleCheckJson(bool cycleCheckJson);
+    void enableCycleCheckVideos(bool cycleCheckVideos);
+    void enableCycleConnectionCheck(bool cycleCheckConnection);
+    void enableCycleAuidoCheck(bool cycleCheckAuido);
 
     bool linesOK;
     bool stationsOK;
     bool GPSOK;
-    bool audio
+    bool audioOK;
+
+    bool cycleCheckFileLines;
+    bool cycleCheckJson;
+    bool cycleCheckVideos;
+    bool cycleCheckConnection;
+    bool cycleCheckAuido;
 
 public slots:
 

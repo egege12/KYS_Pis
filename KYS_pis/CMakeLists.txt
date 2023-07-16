@@ -16,7 +16,6 @@ find_package(Qt5 REQUIRED COMPONENTS Quick)
 find_package(Qt5 REQUIRED COMPONENTS Multimedia)
 
 
-
 add_executable(appKYS_Pis
     qml.qrc
     main.cpp
