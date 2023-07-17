@@ -58,7 +58,7 @@ public slots:
 
     void cycleCall();
 
-
+    void saveDataStations(const QJsonArray& dataStations);
 
 signals:
 

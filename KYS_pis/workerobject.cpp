@@ -49,37 +49,70 @@ workerObject::~workerObject()
     QString path= QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     QDir directory(path+"/appKYS_Pis/Log");
     QDateTime currentDateTime = QDateTime::currentDateTime();
-    QString formattedDateTime = currentDateTime.toString("Dyyyy_MM_dd_Shh_mm_ss");
+    QString formattedDateTime = currentDateTime.toString("Dyyyy_MM_dd");
+
+
     if(directory.exists()){
         // do nothing
     }else{
         directory.mkpath(path+"/appKYS_Pis/Log");
         this->endPoints->setErrCode("log dosyası bulunamadı ve oluşturuldu.");
     }
-    QFile logFile(path+"/appKYS_Pis/Log/"+formattedDateTime+"_logs.txt");
 
-    if (!logFile.open(QIODevice::WriteOnly| QIODevice::Truncate )){
-         this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
-    }else{
-        QTextStream out(&logFile);
-         this->endPoints->setErrCode("Kayıt defterine kayıt edildi.");
-         foreach(QString logLine , this->endPoints->errList){
-           out<<logLine<<Qt::endl;
+
+    QFile logFile(path+"/appKYS_Pis/Log/"+formattedDateTime+"_logs.PISLog");
+    if(logFile.exists()){
+        if (!logFile.open(QIODevice::Append)){
+            this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
+        }else{
+
+            QTextStream out(&logFile);
+             this->endPoints->setErrCode("Kayıt defterine kayıt edildi.");
+             foreach(QString logLine , this->endPoints->errList){
+                 if(!logLine.isEmpty()){
+                    out<<logLine<<Qt::endl;
+                 }
+            }
+            logFile.close();
         }
-
-        logFile.close();
+    }else{
+        if (!logFile.open(QIODevice::WriteOnly| QIODevice::Truncate )){
+             this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
+        }else{
+            QTextStream out(&logFile);
+             this->endPoints->setErrCode("Kayıt defterine kayıt edildi.");
+             foreach(QString logLine , this->endPoints->errList){
+                if(!logLine.isEmpty()){
+                    out<<logLine<<Qt::endl;
+                }
+            }
+            logFile.close();
+        }
     }
-    QFile logFile2("C:/appKYS_Pis/PISLog/"+formattedDateTime+"_logs.txt");
 
-
-    if (!logFile2.open(QIODevice::WriteOnly| QIODevice::Truncate )){
-         this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
-    }else{
-        QTextStream out2(&logFile2);
-        foreach(QString logLine2 , this->endPoints->errList){
-           out2<<logLine2<<Qt::endl;
+    QFile logFile2("C:/appKYS_Pis/PISLog/"+formattedDateTime+"_logs.PISLog");
+    if(logFile2.exists()){
+        if (!logFile2.open(QIODevice::Append  )){
+            this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
+        }else{
+            qint64 fileSize = logFile2.size();
+            logFile2.seek(fileSize);
+            QTextStream out2(&logFile2);
+            foreach(QString logLine2 , this->endPoints->errList){
+               out2<<logLine2<<Qt::endl;
+            }
+            logFile2.close();
         }
-        logFile2.close();
+    }else{
+        if (!logFile2.open(QIODevice::WriteOnly| QIODevice::Truncate )){
+             this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
+        }else{
+            QTextStream out2(&logFile2);
+            foreach(QString logLine2 , this->endPoints->errList){
+               out2<<logLine2<<Qt::endl;
+            }
+            logFile2.close();
+        }
     }
     this->endPoints->errList.clear();
 }
@@ -102,7 +135,6 @@ if (reply->error() == QNetworkReply::NoError) {
 }
 
 delete reply;
-
 
 }
 
@@ -157,10 +189,32 @@ bool jsonFileOK;
 
         QFile file(filePath);
         if (file.exists()) {
-           jsonFileOK = true;
+           if (!file.open(QIODevice::ReadOnly)) {
+               this->endPoints->setErrCode("-checkFileJson- JSON dosyası açılamadı");
+               jsonFileOK = false;
+           }
+           QByteArray fileData = file.readAll();
+           file.close();
+
+           QJsonDocument fileDoc = QJsonDocument::fromJson(fileData);
+           if (!fileDoc.isArray()) {
+               this->endPoints->setErrCode("-checkFileJson- JSON verisi geçersiz");
+                   jsonFileOK = false;
+           }
+
+           QJsonArray existingDataStations = fileDoc.array();
+           bool lineIdFound = false;
+           for (int i = 0; i < existingDataStations.size(); ++i) {
+               QJsonObject existingLineObj = existingDataStations.at(i).toObject();
+               if (existingLineObj.contains("lineId")) {
+                   lineIdFound = true;
+                   break;
+               }
+           }
         } else {
            jsonFileOK = false;
         }
+
 }
 return jsonFileOK;
 }
@@ -179,7 +233,7 @@ bool workerObject::checkFolderVideo()
            directory.mkpath(path);
            if (directory.exists()){
                folderVideosOK = true;
-               this->endPoints->setErrCode("PISVideos klasörü mevcut değil, oluşturuldu");
+               this->endPoints->setErrCode("PISVideos klasörü mevcut değildi, oluşturuldu");
            }else{
                folderVideosOK = false;
                this->endPoints->setErrCode("PISVideos klasörü mevcut değil ve oluşturulamadı");
@@ -294,6 +348,8 @@ void workerObject::startObject()
     QObject::connect(this,&workerObject::doneReqHTTP,this,&workerObject::readJSON,Qt::AutoConnection);
     QObject::connect(this,&workerObject::doneReadJSON,this->endPoints,&endPointsClass::setUpdatingStations,Qt::AutoConnection);
 
+    enableCycleCheckJson(!checkFileJson());
+    enableCycleCheckFileLines(!checkFileLines());
     if(checkFileJson()){
         readJSON();
         this->endPoints->setErrCode("Json dosyası mevcut");
@@ -320,17 +376,44 @@ void workerObject::stopObject()
     QObject::disconnect(this,&workerObject::doneReqHTTP,this,&workerObject::readJSON);
     QObject::disconnect(this,&workerObject::doneReadJSON,this->endPoints,&endPointsClass::setUpdatingStations);
 }
+void workerObject::saveDataStations(const QJsonArray& dataStations)
+{
+    // Dosya yolu
+    QString filePath = "C:/appKYS_Pis/PISStations/dataStations.json";
 
+    // Dosya kontrolü
+    QFile file(filePath);
+    bool fileExists = file.exists();
+
+    // Dosyayı aç veya oluştur
+    if (!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
+        qDebug() << "Dosya açılamadı!";
+        return;
+    }
+
+    // JSON verisini yaz
+    QJsonDocument doc(dataStations);
+    QByteArray jsonData = doc.toJson();
+
+    // Dosyayı boşalt ve veriyi yaz
+    file.resize(0);
+    file.write(jsonData);
+    file.close();
+
+    if (fileExists) {
+        qDebug() << "Dosya güncellendi!";
+    } else {
+        qDebug() << "Dosya oluşturuldu!";
+    }
+}
 void workerObject::sendHttpReq()
 {
     QString apiUrl = "https://kaktusmobile.kayseriulasim.com.tr/api/LineStops";
 
-    // Ana JSON objesini oluştur
     QJsonObject mergedJson;
 
-    // Her bir lineId için sorgu yap
     for (const QString& lineId : lines) {
-        // İlk sorgu: direction = 1
+
         QString query1 = QString("%1?lineId=%2&direction=1").arg(apiUrl).arg(lineId);
         QNetworkAccessManager manager;
         QNetworkReply *reply1 = manager.get(QNetworkRequest(QUrl(query1)));
@@ -338,61 +421,116 @@ void workerObject::sendHttpReq()
         QEventLoop loop1;
         QObject::connect(reply1, &QNetworkReply::finished, &loop1, &QEventLoop::quit);
 
-        // İstek tamamlanana kadar döngüyü beklet
         loop1.exec();
-
-        if (reply1->error() == QNetworkReply::NoError) {
-           QByteArray responseData1 = reply1->readAll();
-           QJsonParseError jsonParseError;
-           QJsonDocument json1 = QJsonDocument::fromJson(responseData1, &jsonParseError);
-           if (jsonParseError.error == QJsonParseError::NoError && !json1.isNull() && !json1.isEmpty()) {
-               QJsonValue jsonValue1(json1.array());
-               mergedJson[lineId].toObject()["direction1"] = jsonValue1;
-           }
-        }
-
-        reply1->deleteLater();
-
-        // İkinci sorgu: direction = 2
         QString query2 = QString("%1?lineId=%2&direction=2").arg(apiUrl).arg(lineId);
         QNetworkReply *reply2 = manager.get(QNetworkRequest(QUrl(query2)));
 
         QEventLoop loop2;
         QObject::connect(reply2, &QNetworkReply::finished, &loop2, &QEventLoop::quit);
 
-        // İstek tamamlanana kadar döngüyü beklet
         loop2.exec();
 
-        if (reply2->error() == QNetworkReply::NoError) {
+        if ((reply1->error() == QNetworkReply::NoError) && (reply2->error() == QNetworkReply::NoError)) {
+           QByteArray responseData1 = reply1->readAll();
+           QJsonParseError jsonParseError1;
+           QJsonDocument json1 = QJsonDocument::fromJson(responseData1, &jsonParseError1);
            QByteArray responseData2 = reply2->readAll();
-           QJsonParseError jsonParseError;
-           QJsonDocument json2 = QJsonDocument::fromJson(responseData2, &jsonParseError);
-           if (jsonParseError.error == QJsonParseError::NoError && !json2.isNull() && !json2.isEmpty()) {
-               QJsonValue jsonValue2(json2.array());
-               mergedJson[lineId].toObject()["direction2"] = jsonValue2;
+           QJsonParseError jsonParseError2;
+           QJsonDocument json2 = QJsonDocument::fromJson(responseData2, &jsonParseError2);
+           if ((jsonParseError1.error == QJsonParseError::NoError && !json1.isNull() && !json1.isEmpty()) && (jsonParseError2.error == QJsonParseError::NoError && !json2.isNull() && !json2.isEmpty())) {
+               QJsonObject lineObj;
+               lineObj.insert("lineId", lineId);
+               if (json1.isEmpty()) {
+                   qDebug() << "Yön bulunamadı!";
+                   lineObj.insert("direction1", QJsonArray());
+               } else {
+                   QJsonArray directionArray;
+                   directionArray.append(json1.array());
+                   lineObj.insert("direction1", directionArray);
+               }
+               if (json2.isEmpty()) {
+                   qDebug() << "Yön bulunamadı!";
+                   lineObj.insert("direction2", QJsonArray());
+               } else {
+                   QJsonArray directionArray;
+                   directionArray.append(json2.array());
+                   lineObj.insert("direction2", directionArray);
+               }
+
+               // Dosyayı oku
+               QFile file("C:/appKYS_Pis/PISStations/dataStations.json");
+               if (file.exists()) {
+                   if (!file.open(QIODevice::ReadOnly)) {
+                       qDebug() << "Dosya açılamadı!";
+                       return;
+                   }
+                   QByteArray fileData = file.readAll();
+                   file.close();
+
+                   QJsonDocument fileDoc = QJsonDocument::fromJson(fileData);
+                   if (!fileDoc.isArray()) {
+                       qDebug() << "Geçersiz JSON verisi!";
+                           return;
+                   }
+
+                   QJsonArray existingDataStations = fileDoc.array();
+                   bool lineIdFound = false;
+                   for (int i = 0; i < existingDataStations.size(); ++i) {
+                       QJsonObject existingLineObj = existingDataStations.at(i).toObject();
+                       if (existingLineObj.contains("lineId") && existingLineObj["lineId"].toString() == lineId) {
+                           existingDataStations.replace(i, lineObj);
+                           lineIdFound = true;
+                           break;
+                       }
+                   }
+
+                   if (!lineIdFound) {
+                       existingDataStations.append(lineObj);
+                   }
+
+                   saveDataStations(existingDataStations);
+               } else {
+                   QJsonArray newDataStations;
+                   newDataStations.append(lineObj);
+                   saveDataStations(newDataStations);
+               }
            }
         }
 
+        reply1->deleteLater();
         reply2->deleteLater();
-    }
-
-    // Birleştirilmiş JSON'ı dosyaya yaz
-    QString filePath = "C:/appKYS_Pis/PISStations/dataStations.json";
-    QDir().mkpath(QFileInfo(filePath).dir().absolutePath()); // Klasörü oluştur
-    QFile file(filePath);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream stream(&file);
-        stream << QJsonDocument(mergedJson).toJson();
-        file.close();
-        qDebug() << "Dosya oluşturuldu / güncellendi.";
-    } else {
-        qDebug() << "Dosya açılamadı.";
     }
 }
 
 void workerObject::readJSON()
 {
+    QString filePath = "C:/appKYS_Pis/PISStations/dataStations.json"; // Kontrol edilecek dosyanın yolu
 
+    QFile file(filePath);
+    if (file.exists()) {
+        if (!file.open(QIODevice::ReadOnly)) {
+           this->endPoints->setErrCode("-readJSON- JSON dosyası açılamadı");
+        }
+        QByteArray fileData = file.readAll();
+        file.close();
+
+        QJsonDocument fileDoc = QJsonDocument::fromJson(fileData);
+        if (!fileDoc.isArray()) {
+           this->endPoints->setErrCode("-readJSON- JSON verisi geçersiz");
+        }
+
+        QJsonArray existingDataStations = fileDoc.array();
+        bool lineIdFound = false;
+        for (int i = 0; i < existingDataStations.size(); ++i) {
+           QJsonObject existingLineObj = existingDataStations.at(i).toObject();
+           if (existingLineObj.contains("lineId")) {
+               lineIdFound = true;
+
+           }
+        }
+    } else {
+
+    }
 }
 
 void workerObject::readLineLIST()
@@ -401,10 +539,13 @@ void workerObject::readLineLIST()
     if(file.open(QIODevice::ReadOnly)){
         QTextStream *lines = new QTextStream(&file);
         quint8 lineNumber=0;
+        this->lines.clear();
         while(!lines->atEnd()){
-               QString line = lines->readLine();
-               this->endPoints->setErrCode("Hatlar başarıyla okundu.Hatlar"+line);
-               this->lines = line.split(",");
+                QString line = lines->readLine();
+               if(lineNumber>0){
+                    this->lines.append(line.split(","));
+                    this->endPoints->setErrCode("Hatlar başarıyla okundu.Hatlar"+line);
+               }
            lineNumber++;
         }
         if(lineNumber>0){
@@ -425,6 +566,12 @@ void workerObject::cycleCall()
 {
     emit this->endPoints->setStateNetwork(this->checkConnection());
     if(cycleCheckFileLines){
-        checkFileLines();
+        enableCycleCheckFileLines(!checkFileLines());
+    }
+    if(cycleCheckJson){
+        enableCycleCheckJson(!checkFileJson());
+        if(checkFileJson()){
+           readLineLIST();
+        }
     }
 }
