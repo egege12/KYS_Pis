@@ -21,7 +21,7 @@ public:
     explicit workerObject(QObject *parent = nullptr, endPointsClass *endPoints = nullptr);
     ~workerObject();
 
-    bool checkConnection();
+
     bool checkFolderStations();
     bool checkFileLines();
     bool checkFileJson();
@@ -37,6 +37,8 @@ public:
 
     bool linesOK;
     bool stationsOK;
+    bool JSONOK;
+    bool JSONReadOK;
     bool GPSOK;
     bool audioOK;
 
@@ -60,11 +62,16 @@ public slots:
 
     void saveDataStations(const QJsonArray& dataStations);
 
-signals:
+    bool checkConnection();
+    bool check
 
+signals:
+    void doneConnectionCheck();
+    void doneServiceCheck();
     void doneReqHTTP();
     void doneReadJSON(bool state);
     void donereadLineList();
+
 
 };
 

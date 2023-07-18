@@ -28,8 +28,6 @@ workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
     checkFolderStations();
     checkFolderVideo();
     checkFolderAudioForLines();
-    checkFileLines();
-
 
 }
 
@@ -172,9 +170,11 @@ bool lineCsvOK;
         QFile file(filePath);
         if (file.exists()) {
            lineCsvOK = true;
+           this->linesOK = true;
            enableCycleCheckFileLines(false);
         } else {
            lineCsvOK = false;
+           this->linesOK = false;
            enableCycleCheckFileLines(true);
         }
 }
@@ -183,8 +183,8 @@ return lineCsvOK;
 
 bool workerObject::checkFileJson()
 {
-bool jsonFileOK;
-{       //Is lineCsvOK ?
+bool jsonFileOK = true;
+      //Is lineCsvOK ?
         QString filePath = "C:/appKYS_Pis/PISStations/dataStations.json"; // Kontrol edilecek dosyanın yolu
 
         QFile file(filePath);
@@ -203,19 +203,34 @@ bool jsonFileOK;
            }
 
            QJsonArray existingDataStations = fileDoc.array();
-           bool lineIdFound = false;
-           for (int i = 0; i < existingDataStations.size(); ++i) {
-               QJsonObject existingLineObj = existingDataStations.at(i).toObject();
-               if (existingLineObj.contains("lineId")) {
-                   lineIdFound = true;
-                   break;
+           bool lineIdNotFoundExt = false;
+           for(const QString& LineId : this->lines){
+               bool lineIdFoundInn = false;
+               for (int i = 0; i < existingDataStations.size(); ++i) {
+                    QJsonObject existingLineObj = existingDataStations.at(i).toObject();
+                    if (existingLineObj.contains("lineId")) {
+                        if (existingLineObj["lineId"].toString() == LineId){
+                            lineIdFoundInn = true;
+                        }
+                    }else{
+                        jsonFileOK = false;
+                    }
+                    qDebug()<<" lineIdFoundInn: " <<lineIdFoundInn;
                }
+               if(!lineIdFoundInn){
+                    lineIdNotFoundExt = true;
+               }qDebug()<<" lineIdFoundInn: " <<lineIdFoundInn;
+           }
+           if(lineIdNotFoundExt){
+               jsonFileOK = false;
            }
         } else {
            jsonFileOK = false;
         }
 
-}
+
+this->JSONOK = jsonFileOK;
+qDebug()<<"stat: " <<jsonFileOK;
 return jsonFileOK;
 }
 
@@ -348,18 +363,6 @@ void workerObject::startObject()
     QObject::connect(this,&workerObject::doneReqHTTP,this,&workerObject::readJSON,Qt::AutoConnection);
     QObject::connect(this,&workerObject::doneReadJSON,this->endPoints,&endPointsClass::setUpdatingStations,Qt::AutoConnection);
 
-    enableCycleCheckJson(!checkFileJson());
-    enableCycleCheckFileLines(!checkFileLines());
-    if(checkFileJson()){
-        readJSON();
-        this->endPoints->setErrCode("Json dosyası mevcut");
-    }else{
-           this->endPoints->setErrCode("Json dosyası mevcut değil");
-        if(checkFileLines()){
-           this->endPoints->setErrCode("Json dosyası mevcut değil hatlar okunarak yaratılacak");
-           readLineLIST();
-        }
-    }
 }
 
 void workerObject::stopObject()
@@ -457,7 +460,6 @@ void workerObject::sendHttpReq()
                    lineObj.insert("direction2", directionArray);
                }
 
-               // Dosyayı oku
                QFile file("C:/appKYS_Pis/PISStations/dataStations.json");
                if (file.exists()) {
                    if (!file.open(QIODevice::ReadOnly)) {
@@ -482,12 +484,27 @@ void workerObject::sendHttpReq()
                            lineIdFound = true;
                            break;
                        }
+
+                   }
+                   for (int i = 0; i < existingDataStations.size(); ++i) {
+                       QJsonObject existingLineObj = existingDataStations.at(i).toObject();
+                       if(existingLineObj.contains("lineId")){
+                           bool lineNotContains = true;
+                           for(const QString& line : this->lines){
+                                if(line == (existingLineObj["lineId"].toString())){
+                                   lineNotContains = false;
+                                }
+                           }
+                           if (lineNotContains){
+                                qDebug() << "REMOVE";
+                                existingDataStations.removeAt(i);
+                           }
+                       }
                    }
 
                    if (!lineIdFound) {
                        existingDataStations.append(lineObj);
                    }
-
                    saveDataStations(existingDataStations);
                } else {
                    QJsonArray newDataStations;
@@ -569,8 +586,9 @@ void workerObject::cycleCall()
         enableCycleCheckFileLines(!checkFileLines());
     }
     if(cycleCheckJson){
-        enableCycleCheckJson(!checkFileJson());
-        if(checkFileJson()){
+        bool checkJson = checkFileJson();
+        enableCycleCheckJson(!checkJson);
+        if(checkJson){
            readLineLIST();
         }
     }
