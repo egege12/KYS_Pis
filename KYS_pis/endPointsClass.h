@@ -39,14 +39,15 @@ class endPointsClass: public QObject{
     Q_PROPERTY(QString nextStation READ nextStation WRITE setNextStation NOTIFY nextStationChanged)
 
     Q_PROPERTY(QString currentSpecialAnounce READ currentSpecialAnounce WRITE setCurrentSpecialAnounce NOTIFY currentSpecialAnounceChanged)
-    struct station;
+
 public:
 
-
+    struct station;
     QList<QString> errList{0};
-    QMap<QString,QList<station>> currentLineStations;
+    QMap<QString,QList<station*>*> allLineStations;
+    QList<station> currentLineStations;
     explicit endPointsClass(QObject *parent = nullptr);
-
+    ~endPointsClass();
     bool stateNoInit() const;
     void setStateNoInit(bool newStateNoInit);
 
@@ -111,6 +112,10 @@ public:
 
     bool folderStructureOK() const;
     void setFolderStructureOK(bool newFolderStructureOK);
+
+    void addItemStations(QString ID, QString dir, QList<station *> *);
+
+    void selectLine(QString ID,QString dir,QList<station*>);
 
 signals:
     void stateNoInitChanged();
@@ -188,6 +193,17 @@ struct  endPointsClass::station{
 inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
 {
 
+}
+
+inline endPointsClass::~endPointsClass()
+{
+    for(QList<station*>* list : allLineStations){
+        for(station *st  : *list){
+            delete st;
+        }
+        list->clear();
+        delete list;
+    }
 }
 
 inline bool endPointsClass::stateNoInit() const
@@ -479,6 +495,21 @@ inline void endPointsClass::setFolderStructureOK(bool newFolderStructureOK)
         return;
     m_folderStructureOK = newFolderStructureOK;
     emit folderStructureOKChanged();
+}
+
+inline void endPointsClass::addItemStations(QString ID, QString dir, QList<station *>* stationAdd)
+{
+    if(allLineStations.contains(ID+"_"+dir)){
+        allLineStations[ID+dir]->clear();
+        allLineStations[ID+dir]->append(*stationAdd);
+    }else{
+        allLineStations.insert(ID+"_"+dir,stationAdd);
+    }
+}
+
+inline void endPointsClass::selectLine(QString ID, QString dir, QList<station*>)
+{
+
 }
 
 

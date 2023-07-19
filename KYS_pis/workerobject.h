@@ -28,6 +28,19 @@ public:
     bool checkFolderVideo();
     bool checkFolderAudioForLines();
     bool checkFolderSpecialAnouncement();
+
+    //Helpers
+    void compareAndCopyFile(const QString& sourcePath, const QString& destinationPath);
+
+    //Operations
+    void readStations();
+    void sendHttpReq();
+    bool readJSON(bool useBackup);
+    bool readLineLIST(bool useBackup);
+    void saveDataStations(const QJsonArray& dataStations);
+    bool checkConnection();
+    bool checkService();
+
     //If one fails cycle check starts for that
     void enableCycleCheckFileLines(bool cycleCheckFileLines);
     void enableCycleCheckJson(bool cycleCheckJson);
@@ -37,8 +50,6 @@ public:
 
     bool linesOK;
     bool stationsOK;
-    bool JSONOK;
-    bool JSONReadOK;
     bool GPSOK;
     bool audioOK;
 
@@ -52,25 +63,12 @@ public slots:
 
     void startObject();
     void stopObject();
-
-    void sendHttpReq();
-    void readJSON();
-    void readLineLIST();
     void rwComApp();
-
     void cycleCall();
-
-    void saveDataStations(const QJsonArray& dataStations);
-
-    bool checkConnection();
-    bool check
+    void updateList();
 
 signals:
-    void doneConnectionCheck();
-    void doneServiceCheck();
-    void doneReqHTTP();
-    void doneReadJSON(bool state);
-    void donereadLineList();
+    void doneUpdate(bool updateStations);
 
 
 };

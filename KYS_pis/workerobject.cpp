@@ -136,6 +136,30 @@ delete reply;
 
 }
 
+bool workerObject::checkService()
+{
+
+QNetworkAccessManager manager;
+QString url("https://kaktusmobile.kayseriulasim.com.tr/api/LineStops");
+QNetworkRequest request(QUrl(QString("%1?lineId=%2&direction=1").arg(url).arg(0)));
+
+QNetworkReply* reply = manager.get(request);
+QEventLoop loop1;
+QObject::connect(reply, &QNetworkReply::finished, &loop1, &QEventLoop::quit);
+bool serviceStat;
+loop1.exec();
+
+    if (reply->error() == QNetworkReply::NoError) {
+        this->endPoints->setErrCode("-checkService- Servis aktif.");
+        serviceStat = true;
+    } else {
+        this->endPoints->setErrCode("-checkService- Servis yanıt vermiyor.");
+        serviceStat = false;
+    }
+    reply->deleteLater();
+    return serviceStat;
+}
+
 bool workerObject::checkFolderStations()
 {
     bool folderStationsOK;
@@ -170,11 +194,9 @@ bool lineCsvOK;
         QFile file(filePath);
         if (file.exists()) {
            lineCsvOK = true;
-           this->linesOK = true;
            enableCycleCheckFileLines(false);
         } else {
            lineCsvOK = false;
-           this->linesOK = false;
            enableCycleCheckFileLines(true);
         }
 }
@@ -215,11 +237,10 @@ bool jsonFileOK = true;
                     }else{
                         jsonFileOK = false;
                     }
-                    qDebug()<<" lineIdFoundInn: " <<lineIdFoundInn;
                }
                if(!lineIdFoundInn){
                     lineIdNotFoundExt = true;
-               }qDebug()<<" lineIdFoundInn: " <<lineIdFoundInn;
+               }
            }
            if(lineIdNotFoundExt){
                jsonFileOK = false;
@@ -227,10 +248,6 @@ bool jsonFileOK = true;
         } else {
            jsonFileOK = false;
         }
-
-
-this->JSONOK = jsonFileOK;
-qDebug()<<"stat: " <<jsonFileOK;
 return jsonFileOK;
 }
 
@@ -321,6 +338,84 @@ bool workerObject::checkFolderSpecialAnouncement()
 return  folderSpecialAnounceOK;
 }
 
+void workerObject::compareAndCopyFile(const QString &sourcePath, const QString &destinationPath)
+{
+QFile sourceFile(sourcePath);
+QFile destinationFile(destinationPath);
+QDir backupDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)+"/appKYS_Pis/Backups");
+backupDir.mkpath(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)+"/appKYS_Pis/Backups");
+
+if (sourceFile.open(QIODevice::ReadOnly | QIODevice::Text) &&
+    destinationFile.open(QIODevice::ReadWrite | QIODevice::Text))
+{
+    QTextStream sourceStream(&sourceFile);
+    QTextStream destinationStream(&destinationFile);
+
+    QString sourceContent = sourceStream.readAll();
+    QString destinationContent = destinationStream.readAll();
+
+    if (sourceContent != destinationContent)
+    {
+           destinationFile.close();
+
+           if (destinationFile.open(QIODevice::WriteOnly | QIODevice::Text))
+           {
+               QTextStream writeStream(&destinationFile);
+               writeStream << sourceContent;
+               qDebug() << "File has been successfully copied to the destination.";
+           }
+           else
+           {
+               qDebug() << "Error opening the destination file for writing.";
+           }
+    }
+    else
+    {
+           qDebug() << "The file at the destination are the same. No action taken.";
+    }
+
+    sourceFile.close();
+    destinationFile.close();
+}
+else
+{
+    qDebug() << "Error opening the files. Please check the file paths.";
+}
+}
+
+void workerObject::readStations()
+{
+    checkFileLines();
+    bool stationsRead;
+
+    this->linesOK = readLineLIST(true);
+
+    if(checkFileJson()){
+        stationsRead = readJSON(false);
+    }else{
+        if(linesOK){
+           if(checkConnection() && checkService()){
+               sendHttpReq();
+               stationsRead = readJSON(false);
+           }else{
+               stationsRead = readJSON(true);
+               QString destinationPath = "C:/appKYS_Pis/PISStations/dataStations.json";
+               QString sourcePath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)+"/appKYS_Pis/Backups/dataStations.json";
+               compareAndCopyFile(sourcePath, destinationPath);
+           }
+        }else{
+           stationsRead = readJSON(true);
+        }
+    }
+    if (stationsRead){
+        this->endPoints->setErrCode("-readStations- istasyonlar okundu.");
+    }else{
+        this->endPoints->setErrCode("-readStations- istasyonlar okunamadı.");
+    }
+    this->stationsOK = stationsRead;
+
+}
+
 void workerObject::enableCycleCheckFileLines(bool cycleCheckFileLines)
 {
     this-> cycleCheckFileLines = cycleCheckFileLines;
@@ -358,11 +453,9 @@ void workerObject::startObject()
     QObject::connect(timer2,&QTimer::timeout,this,&workerObject::cycleCall,Qt::AutoConnection);
     timer2->start();
 
-    QObject::connect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::readLineLIST,Qt::AutoConnection);
-    QObject::connect(this,&workerObject::donereadLineList,this,&workerObject::sendHttpReq,Qt::AutoConnection);
-    QObject::connect(this,&workerObject::doneReqHTTP,this,&workerObject::readJSON,Qt::AutoConnection);
-    QObject::connect(this,&workerObject::doneReadJSON,this->endPoints,&endPointsClass::setUpdatingStations,Qt::AutoConnection);
-
+    QObject::connect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::updateList,Qt::AutoConnection);
+    QObject::connect(this,&workerObject::doneUpdate,this->endPoints,&endPointsClass::setUpdatingStations,Qt::AutoConnection);
+    readStations();
 }
 
 void workerObject::stopObject()
@@ -374,10 +467,8 @@ void workerObject::stopObject()
     delete timer1;
     delete timer2;
     //Nothing here
-    QObject::disconnect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::readLineLIST);
-    QObject::disconnect(this,&workerObject::donereadLineList,this,&workerObject::sendHttpReq);
-    QObject::disconnect(this,&workerObject::doneReqHTTP,this,&workerObject::readJSON);
-    QObject::disconnect(this,&workerObject::doneReadJSON,this->endPoints,&endPointsClass::setUpdatingStations);
+    QObject::disconnect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::updateList);
+    QObject::disconnect(this,&workerObject::doneUpdate,this->endPoints,&endPointsClass::setUpdatingStations);
 }
 void workerObject::saveDataStations(const QJsonArray& dataStations)
 {
@@ -517,11 +608,14 @@ void workerObject::sendHttpReq()
         reply1->deleteLater();
         reply2->deleteLater();
     }
+    QString sourcePath = "C:/appKYS_Pis/PISStations/dataStations.json";
+    QString destinationPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)+"/appKYS_Pis/Backups/dataStations.json";
+    compareAndCopyFile(sourcePath, destinationPath);
 }
 
-void workerObject::readJSON()
+bool workerObject::readJSON(bool useBackup)
 {
-    QString filePath = "C:/appKYS_Pis/PISStations/dataStations.json"; // Kontrol edilecek dosyanın yolu
+    QString filePath = useBackup? QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)+"/appKYS_Pis/Backups/dataStations.json":"C:/appKYS_Pis/PISStations/dataStations.json"; // Kontrol edilecek dosyanın yolu
 
     QFile file(filePath);
     if (file.exists()) {
@@ -540,17 +634,50 @@ void workerObject::readJSON()
         bool lineIdFound = false;
         for (int i = 0; i < existingDataStations.size(); ++i) {
            QJsonObject existingLineObj = existingDataStations.at(i).toObject();
-           if (existingLineObj.contains("lineId")) {
-               lineIdFound = true;
+           QString ID = existingLineObj["lineId"].toString();
+           QList<endPointsClass::station*>* listStations;
 
+           QJsonArray direction1 = existingLineObj["direction1"].toArray();
+           for(int i =0; i<direction1.size();++i){
+               QJsonObject station = direction1.at(i).toObject();
+               if(station.contains("id") && station.contains("latitude") && station.contains("longitude") && station.contains("name")){
+                   endPointsClass::station* newStation = new  endPointsClass::station;
+                   newStation->id = station["id"].toString();
+                   newStation->latitude = station["latitude"].toString();
+                   newStation->longitude = station["longitude"].toString();
+                   newStation->name = station["name"].toString();
+                   listStations->append(newStation);
+
+               }else{
+                    qDebug()<<"json1 etiketleri eksik";
+               }
            }
+           endPoints->addItemStations(ID,"1",listStations);
+
+           QJsonArray direction2 = existingLineObj["direction2"].toArray();
+           for(int i =0; i<direction2.size();++i){
+               QJsonObject station = direction2.at(i).toObject();
+               if(station.contains("id") && station.contains("latitude") && station.contains("longitude") && station.contains("name")){
+                    endPointsClass::station* newStation = new  endPointsClass::station;
+                    newStation->id = station["id"].toString();
+                    newStation->latitude = station["latitude"].toString();
+                    newStation->longitude = station["longitude"].toString();
+                    newStation->name = station["name"].toString();
+                    listStations->append(newStation);
+
+               }else{
+                    qDebug()<<"json2 etiketleri eksik";
+               }
+           }
+           endPoints->addItemStations(ID,"2",listStations);
         }
     } else {
-
+        this->endPoints->setErrCode("-readJSON- dataStations.json açılamadı");
     }
+    return true;
 }
 
-void workerObject::readLineLIST()
+bool workerObject::readLineLIST(bool useBackup)
 {
     QFile file("C:/appKYS_Pis/PISStations/dataLines.csv");
     if(file.open(QIODevice::ReadOnly)){
@@ -561,16 +688,86 @@ void workerObject::readLineLIST()
                 QString line = lines->readLine();
                if(lineNumber>0){
                     this->lines.append(line.split(","));
-                    this->endPoints->setErrCode("Hatlar başarıyla okundu.Hatlar"+line);
                }
            lineNumber++;
         }
-        if(lineNumber>0){
-           emit this->donereadLineList();
-        }else
-           enableCycleCheckFileLines(true);
+        bool hasMember = (this->lines.size()>0);
+        bool isNumber = true;
+        bool isRange = true;
+        for(const QString& lineId : this->lines){
+           bool isThisNumber;
+           lineId.toDouble(&isThisNumber);
+           if(!isThisNumber){
+                    isNumber = false;
+           }else{
+                    if(!(lineId.toDouble()>0 && lineId.toDouble()<32535)){
+                   isRange = false;
+                    }
+           }
+        }
+        if(!(isNumber && isRange && hasMember)){
+            this->endPoints->setErrCode("-readLineLIST-Okunan hat bilgileri anlamsız.");
+            QString backupPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)+"/appKYS_Pis/Backups/dataLines.csv";
+            QFile backupFile(backupPath);
+            if(backupFile.exists()){
+                    if(backupFile.open(QIODevice::ReadOnly)){
+                        QTextStream *lines = new QTextStream(&backupFile);
+                        quint8 lineNumber=0;
+                        this->lines.clear();
+                        while(!lines->atEnd()){
+                            QString line = lines->readLine();
+                            if(lineNumber>0){
+                                this->lines.append(line.split(","));
+                            }
+                            lineNumber++;
+                        }
+                        return true;
+                    }else{
+                        return false;
+                    }
+            }else{
+                return false;
+            }
+        }else{
+            QString sourcePath = "C:/appKYS_Pis/PISStations/dataLines.csv";
+            QString destinationPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)+"/appKYS_Pis/Backups/dataLines.csv";
+            compareAndCopyFile(sourcePath, destinationPath);
+            this->endPoints->setErrCode("-readLineLIST-dataLines.csv dosyası okundu ve yedek liste güncellendi");
+            return true;
+        }
     }else{
-        checkFileLines();
+        if(useBackup){
+            QString backupPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)+"/appKYS_Pis/Backups/dataLines.csv";
+            QFile backupFile(backupPath);
+            if(backupFile.exists()){
+                if(backupFile.open(QIODevice::ReadOnly)){
+                    QTextStream *lines = new QTextStream(&backupFile);
+                    quint8 lineNumber=0;
+                    this->lines.clear();
+                    while(!lines->atEnd()){
+                            QString line = lines->readLine();
+                            if(lineNumber>0){
+                                this->lines.append(line.split(","));
+                            }
+                            lineNumber++;
+                    }
+                    QString destinationPath = "C:/appKYS_Pis/PISStations/dataLines.csv";
+                    QString sourcePath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)+"/appKYS_Pis/Backups/dataLines.csv";
+                    compareAndCopyFile(sourcePath, destinationPath);
+                    this->endPoints->setErrCode("-readLineLIST-dataLines.csv dosyası okunamadığı için yedek liste aktarıldı.");
+                    return true;
+                }else{
+                    this->endPoints->setErrCode("-readLineLIST-dataLines.csv dosyası okunamadı ve yedek liste de açılamadı.");
+                    return false;
+                }
+            }else{
+                this->endPoints->setErrCode("-readLineLIST-dataLines.csv dosyası okunamadı ve yedek liste bulunmuyor");
+                return false;
+            }
+        }else{
+            this->endPoints->setErrCode("-readLineLIST-dataLines.csv dosyası okunamadı ve yedek liste güncelleme modunda kullanılamaz.");
+            return false;
+        }
     }
 }
 
@@ -580,8 +777,19 @@ void workerObject::rwComApp()
 }
 
 void workerObject::cycleCall()
-{
+{   // Setters
     emit this->endPoints->setStateNetwork(this->checkConnection());
+
+
+
+
+    //Cycle operation check
+
+
+
+
+    //Cycle operation exits
+
     if(cycleCheckFileLines){
         enableCycleCheckFileLines(!checkFileLines());
     }
@@ -589,7 +797,28 @@ void workerObject::cycleCall()
         bool checkJson = checkFileJson();
         enableCycleCheckJson(!checkJson);
         if(checkJson){
-           readLineLIST();
+           readLineLIST(true);
         }
     }
+
+
+}
+
+void workerObject::updateList()
+{
+    bool updateComplete;
+    this->linesOK = readLineLIST(false);
+
+    if(linesOK){
+        if(checkConnection() && checkService()){
+           sendHttpReq();
+           updateComplete = readJSON(false);
+        }else{
+            this->endPoints->setErrCode("-updateList- Bağlantı sorunu veya servis çalışmadığı için güncelleme yapılamadı.");
+        }
+    }else{
+        readLineLIST(true);
+        this->endPoints->setErrCode("-updateList- dataLines.csv bulunamadığı için güncelleme yapılamadı.");
+    }
+
 }
