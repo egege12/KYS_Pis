@@ -14,7 +14,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QEventLoop>
-
+#include <iterator>
 #define COM_INTERVAL 1000
 #define CYCLETIMER_INTERVAL 500
 
@@ -24,7 +24,7 @@
 workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
 {
     this->endPoints = endPoints;
-
+    this->failCounterLifeSign=0;
     checkFolderStations();
     checkFolderVideo();
     checkFolderAudioForLines();
@@ -113,6 +113,9 @@ workerObject::~workerObject()
         }
     }
     this->endPoints->errList.clear();
+
+
+
 }
 
 bool workerObject::checkConnection()
@@ -158,6 +161,16 @@ loop1.exec();
     }
     reply->deleteLater();
     return serviceStat;
+}
+
+void workerObject::checkLifeSign(unsigned int oldLifeSign, unsigned int newLifeSign)
+{
+    if(oldLifeSign !=newLifeSign){
+        this->failCounterLifeSign = 0;
+    }else{
+        this->failCounterLifeSign++;
+    }
+
 }
 
 bool workerObject::checkFolderStations()
@@ -504,7 +517,6 @@ void workerObject::sendHttpReq()
 {
     QString apiUrl = "https://kaktusmobile.kayseriulasim.com.tr/api/LineStops";
 
-    QJsonObject mergedJson;
 
     for (const QString& lineId : lines) {
 
@@ -538,17 +550,13 @@ void workerObject::sendHttpReq()
                    qDebug() << "Yön bulunamadı!";
                    lineObj.insert("direction1", QJsonArray());
                } else {
-                   QJsonArray directionArray;
-                   directionArray.append(json1.array());
-                   lineObj.insert("direction1", directionArray);
+                   lineObj.insert("direction1", json1.array());
                }
                if (json2.isEmpty()) {
                    qDebug() << "Yön bulunamadı!";
                    lineObj.insert("direction2", QJsonArray());
                } else {
-                   QJsonArray directionArray;
-                   directionArray.append(json2.array());
-                   lineObj.insert("direction2", directionArray);
+                   lineObj.insert("direction2", json2.array());
                }
 
                QFile file("C:/appKYS_Pis/PISStations/dataStations.json");
@@ -575,7 +583,6 @@ void workerObject::sendHttpReq()
                            lineIdFound = true;
                            break;
                        }
-
                    }
                    for (int i = 0; i < existingDataStations.size(); ++i) {
                        QJsonObject existingLineObj = existingDataStations.at(i).toObject();
@@ -615,12 +622,14 @@ void workerObject::sendHttpReq()
 
 bool workerObject::readJSON(bool useBackup)
 {
+    bool statJson;
     QString filePath = useBackup? QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)+"/appKYS_Pis/Backups/dataStations.json":"C:/appKYS_Pis/PISStations/dataStations.json"; // Kontrol edilecek dosyanın yolu
 
     QFile file(filePath);
     if (file.exists()) {
         if (!file.open(QIODevice::ReadOnly)) {
            this->endPoints->setErrCode("-readJSON- JSON dosyası açılamadı");
+           return false;
         }
         QByteArray fileData = file.readAll();
         file.close();
@@ -628,6 +637,7 @@ bool workerObject::readJSON(bool useBackup)
         QJsonDocument fileDoc = QJsonDocument::fromJson(fileData);
         if (!fileDoc.isArray()) {
            this->endPoints->setErrCode("-readJSON- JSON verisi geçersiz");
+               return false;
         }
 
         QJsonArray existingDataStations = fileDoc.array();
@@ -635,46 +645,84 @@ bool workerObject::readJSON(bool useBackup)
         for (int i = 0; i < existingDataStations.size(); ++i) {
            QJsonObject existingLineObj = existingDataStations.at(i).toObject();
            QString ID = existingLineObj["lineId"].toString();
-           QList<endPointsClass::station*>* listStations;
 
-           QJsonArray direction1 = existingLineObj["direction1"].toArray();
-           for(int i =0; i<direction1.size();++i){
-               QJsonObject station = direction1.at(i).toObject();
-               if(station.contains("id") && station.contains("latitude") && station.contains("longitude") && station.contains("name")){
-                   endPointsClass::station* newStation = new  endPointsClass::station;
-                   newStation->id = station["id"].toString();
-                   newStation->latitude = station["latitude"].toString();
-                   newStation->longitude = station["longitude"].toString();
-                   newStation->name = station["name"].toString();
-                   listStations->append(newStation);
 
-               }else{
-                    qDebug()<<"json1 etiketleri eksik";
+           if(!existingLineObj["direction1"].isArray() && existingLineObj["direction1"].isNull()){
+               qDebug()<<"direction1 array değil";
+           }else{
+               QJsonArray direction1 = existingLineObj["direction1"].toArray();
+                QList<endPointsClass::station*> listStations;
+               for(int k =0; k<direction1.size();++k){
+                   QJsonObject station = direction1.at(k).toObject();
+                   if(station.contains("id") && station.contains("latitude") && station.contains("longitude") && station.contains("name")){
+                       endPointsClass::station* newStation = new  endPointsClass::station;
+                       newStation->id = QString::number(station["id"].toInt());
+                       newStation->latitude = QString::number(station["latitude"].toDouble());
+                       newStation->longitude = QString::number(station["longitude"].toDouble());
+                       newStation->name = station["name"].toString();
+                       //qDebug()<<newStation->id<<" "<<newStation->name<<" "<<newStation->latitude << " "<< newStation->longitude;
+                       listStations.append(newStation);
+                   }else{
+                       endPoints->setErrCode("-readJSON-"+ID+"hat numarası yön 1 verisi için ID,enlem,boylam,isim alt üyeleri eksik, JSON okunamıyor. ");
+                       statJson = false;
+                   }
                }
-           }
-           endPoints->addItemStations(ID,"1",listStations);
 
-           QJsonArray direction2 = existingLineObj["direction2"].toArray();
-           for(int i =0; i<direction2.size();++i){
-               QJsonObject station = direction2.at(i).toObject();
+                if(listStations.size() == direction1.size()){
+                     endPoints->addItemStations(ID,"1",listStations);
+                }else{
+                     qDebug()<<"-readJSON-"<<ID<<"hat numarası yön 1 verisi eksik okundu. ";
+                     endPoints->setErrCode("-readJSON-"+ID+"hat numarası yön 1 verisi eksik okundu. ");
+                     return false;
+                }
+           }
+
+           if(!existingLineObj["direction2"].isArray() && existingLineObj["direction2"].isNull() ){
+               qDebug()<<"direction2 array değil";
+           }else{
+               QJsonArray direction2 = existingLineObj["direction2"].toArray();
+               QList<endPointsClass::station*> listStations;
+           for(int k =0; k<direction2.size();++k){
+               QJsonObject station = direction2.at(k).toObject();
                if(station.contains("id") && station.contains("latitude") && station.contains("longitude") && station.contains("name")){
-                    endPointsClass::station* newStation = new  endPointsClass::station;
-                    newStation->id = station["id"].toString();
-                    newStation->latitude = station["latitude"].toString();
-                    newStation->longitude = station["longitude"].toString();
-                    newStation->name = station["name"].toString();
-                    listStations->append(newStation);
-
+                       endPointsClass::station* newStation = new  endPointsClass::station;
+                       newStation->id = QString::number(station["id"].toInt());
+                       newStation->latitude = QString::number(station["latitude"].toDouble());
+                       newStation->longitude = QString::number(station["longitude"].toDouble());
+                       newStation->name = station["name"].toString();
+                       //qDebug()<<newStation->id<<" "<<newStation->name<<" "<<newStation->latitude << " "<< newStation->longitude;
+                       listStations.append(newStation);
                }else{
-                    qDebug()<<"json2 etiketleri eksik";
+                     endPoints->setErrCode("-readJSON-"+ID+"hat numarası yön 2 verisi için ID,enlem,boylam,isim alt üyeleri eksik, JSON okunamıyor. ");
+                    statJson = false;
                }
+            }
+           if(listStations.size() == direction2.size()){
+                endPoints->addItemStations(ID,"2",listStations);
+           }else{
+                qDebug()<<"-readJSON-"<<ID<<"hat numarası yön 2 verisi eksik okundu. ";
+                endPoints->setErrCode("-readJSON-"+ID+"hat numarası yön 2 verisi eksik okundu. ");
+                return false;
            }
-           endPoints->addItemStations(ID,"2",listStations);
+
+           }
+        }
+        QFile debug(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)+"/appKYS_Pis/Backups/debug.txt");
+        if(debug.open(QIODevice::WriteOnly)){
+            QTextStream out(&debug);
+           QMap<QString,QList<endPointsClass::station*>>::iterator itrMap;
+            for(itrMap = endPoints->allLineStations.begin();(itrMap!=endPoints->allLineStations.end()); ++itrMap){
+                for(endPointsClass::station* b : itrMap.value()){
+                    out<<itrMap.key()<<" "<< b->name <<" "<<b->id<<" "<<b->latitude<<" "<<b->longitude<<Qt::endl;
+                }
+           }
+            debug.close();
         }
     } else {
         this->endPoints->setErrCode("-readJSON- dataStations.json açılamadı");
+        return false;
     }
-    return true;
+    return statJson;
 }
 
 bool workerObject::readLineLIST(bool useBackup)
@@ -773,6 +821,127 @@ bool workerObject::readLineLIST(bool useBackup)
 
 void workerObject::rwComApp()
 {
+    //READ
+    QFile appToPis("C:/appKYS_Pis/PISCom/ApptoPIS.json");
+
+
+    if (appToPis.exists()) {
+        if (!appToPis.open(QIODevice::ReadOnly)) {
+            this->endPoints->setErrCode("-rwComApp-ApptoPIS.json dosyası okunamadı,APP ile haberleşme sağlanamaz");
+        }
+        QByteArray IIdata = appToPis.readAll();
+        appToPis.close();
+        QJsonDocument IIDataJson = QJsonDocument::fromJson(IIdata);
+        if(!IIDataJson.isObject()){
+            this->endPoints->setErrCode("-rwComApp-ApptoPIS.json formatı uygun değil");
+            if (appToPis.open(QIODevice::WriteOnly)) {
+                QJsonObject fixedObject;
+                fixedObject.insert("VehicleID",0);
+                fixedObject.insert("LifeSign",0);
+                fixedObject.insert("GPSOk","false");
+                fixedObject.insert("GPSLongtitude",0);
+                fixedObject.insert("GPSLatitude",0);
+                fixedObject.insert("VehicleSpeed",0);
+                fixedObject.insert("AnyDoorOpen","true");
+                fixedObject.insert("ProgressUpdate","true");
+                QJsonDocument QJsonDocument(fixedObject);
+                appToPis.write(QJsonDocument.toJson());
+                appToPis.close();
+            }
+        }else{
+            QJsonObject IIDataObj = IIDataJson.object();
+            if(IIDataObj.contains("LifeSign")){
+                checkLifeSign(this->endPoints->iiCom.LifeSign,(unsigned int)IIDataObj["LifeSign"].toInt());
+                this->endPoints->iiCom.LifeSign = IIDataObj["LifeSign"].toInt();
+            }else{
+                this->failCounterLifeSign = 404;
+                this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> LifeSign bulunamadı.");
+            }
+            bool comOK = this->failCounterLifeSign < 6;
+            if(comOK){
+                if(IIDataObj.contains("VehicleID")){
+                    this->endPoints->iiCom.VehicleID = IIDataObj["VehicleID"].toInt();
+                    //qDebug()<<"VehicleID"<<this->endPoints->iiCom.VehicleID ;
+                }else{
+                    this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> VehicleID bulunamadı.");
+                }
+                if(IIDataObj.contains("GPSOk")){
+                    this->endPoints->iiCom.GPSOk = IIDataObj["GPSOk"].toBool();
+                    //qDebug()<<"GPSOk"<<this->endPoints->iiCom.GPSOk ;
+                }else{
+                    this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> GPSOk bulunamadı.");
+                }
+                if(IIDataObj.contains("GPSLongtitude")){
+                    this->endPoints->iiCom.GPSLongtitude = IIDataObj["GPSLongtitude"].toDouble();
+                    //qDebug()<<"GPSLongtitude"<<this->endPoints->iiCom.GPSLongtitude ;
+                }else{
+                    this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> GPSLongtitude bulunamadı.");
+                }
+                if(IIDataObj.contains("GPSLatitude")){
+                    this->endPoints->iiCom.GPSLatitude = IIDataObj["GPSLatitude"].toDouble();
+                    //qDebug()<<"GPSLatitude"<<this->endPoints->iiCom.GPSLatitude ;
+                }else{
+                    this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> GPSLatitude bulunamadı.");
+                }
+                if(IIDataObj.contains("VehicleSpeed")){
+                    this->endPoints->iiCom.VehicleSpeed = IIDataObj["VehicleSpeed"].toInt();
+                    //qDebug()<<"VehicleSpeed"<<this->endPoints->iiCom.VehicleSpeed ;
+                }else{
+                    this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> VehicleSpeed bulunamadı.");
+                }
+                if(IIDataObj.contains("AnyDoorOpen")){
+                    this->endPoints->iiCom.AnyDoorOpen = IIDataObj["AnyDoorOpen"].toBool();
+                    //qDebug()<<"AnyDoorOpen"<<this->endPoints->iiCom.AnyDoorOpen ;
+                }else{
+                    this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> AnyDoorOpen bulunamadı.");
+                }
+                if(IIDataObj.contains("ProgressUpdate")){
+                    this->endPoints->iiCom.ProgressUpdate = IIDataObj["ProgressUpdate"].toBool();
+                    //qDebug()<<"ProgressUpdate"<<this->endPoints->iiCom.ProgressUpdate ;
+                }else{
+                    this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> ProgressUpdate bulunamadı.");
+                }
+            }else{
+                if(this->endPoints->comAppOK()){
+                    this->endPoints->setErrCode("-rwComApp- LifeSign değişmiyor,APP ile haberleşme hatası");
+                }
+            }
+            this->endPoints->setComAppOK(comOK);
+        }
+
+
+    }else{
+        this->endPoints->setErrCode("-rwComApp-ApptoPIS.json dosyası yok,APP ile haberleşme sağlanamaz");
+    }
+
+    //WRITE
+    if(this->endPoints->ioCom.LifeSign>65535){
+        this->endPoints->ioCom.LifeSign=0;
+    }else{
+        ++this->endPoints->ioCom.LifeSign;
+    }
+    QFile pisToApp("C:/appKYS_Pis/PISCom/PIStoApp.json");
+
+    if(!pisToApp.open(QIODevice::WriteOnly)){
+        this->endPoints->setErrCode("-rwComApp-PIStoApp.json dosyası okunamadı,APP'a veri paylaşılamıyor");
+    }else{
+        QJsonObject sendObject;
+        sendObject.insert("LifeSign",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.LifeSign))));
+        sendObject.insert("VehicleID",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.VehicleID))));
+        sendObject.insert("ActiveLineInfo",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.ActiveLineInfo))));
+        sendObject.insert("ActiveDirection",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.ActiveDirection))));
+        sendObject.insert("ActiveStation",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.ActiveStation))));
+        sendObject.insert("ActiveStationId",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.ActiveStationId))));
+        sendObject.insert("NextStation",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.NextStation))));
+        sendObject.insert("NextStationId",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.NextStationId))));
+        sendObject.insert("ActiveAnounce",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.ActiveAnounce))));
+        sendObject.insert("ActiveCommercial",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.ActiveCommercial))));
+        QJsonDocument QJsonDocument(sendObject);
+        pisToApp.write(QJsonDocument.toJson());
+        pisToApp.close();
+    }
+
+
 
 }
 
@@ -780,12 +949,7 @@ void workerObject::cycleCall()
 {   // Setters
     emit this->endPoints->setStateNetwork(this->checkConnection());
 
-
-
-
     //Cycle operation check
-
-
 
 
     //Cycle operation exits

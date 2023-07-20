@@ -17,6 +17,7 @@ private:
     QTimer *timer1;
     QTimer *timer2;
     QList<QString> lines;
+    unsigned failCounterLifeSign;
 public:
     explicit workerObject(QObject *parent = nullptr, endPointsClass *endPoints = nullptr);
     ~workerObject();
@@ -40,7 +41,7 @@ public:
     void saveDataStations(const QJsonArray& dataStations);
     bool checkConnection();
     bool checkService();
-
+    void checkLifeSign(unsigned oldLifeSign, unsigned newLifeSign);
     //If one fails cycle check starts for that
     void enableCycleCheckFileLines(bool cycleCheckFileLines);
     void enableCycleCheckJson(bool cycleCheckJson);
@@ -59,6 +60,8 @@ public:
     bool cycleCheckConnection;
     bool cycleCheckAuido;
 
+
+
 public slots:
 
     void startObject();
@@ -72,5 +75,7 @@ signals:
 
 
 };
+
+
 
 #endif // WORKEROBJECT_H

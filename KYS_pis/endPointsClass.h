@@ -16,11 +16,9 @@ class endPointsClass: public QObject{
     Q_OBJECT
 
     Q_PROPERTY(bool stateNoInit READ stateNoInit WRITE setStateNoInit NOTIFY stateNoInitChanged)
-    Q_PROPERTY(bool stateNoFolderFound READ stateNoFolderFound WRITE setStateNoFolderFound NOTIFY stateNoFolderFoundChanged)
     Q_PROPERTY(bool stateDispWatchOnVideoArea READ stateDispWatchOnVideoArea WRITE setStateDispWatchOnVideoArea NOTIFY stateDispWatchOnVideoAreaChanged)
     Q_PROPERTY(bool stateDispTextOnStationArea READ stateDispTextOnStationArea WRITE setStateDispTextOnStationArea NOTIFY stateDispTextOnStationAreaChanged)
-    Q_PROPERTY(bool stateSpecialAnounceActive READ stateSpecialAnounceActive WRITE setStateSpecialAnounceActive NOTIFY stateSpecialAnounceActiveChanged)
-    Q_PROPERTY(bool stateRegularAnounceActive READ stateRegularAnounceActive WRITE setStateRegularAnounceActive NOTIFY stateRegularAnounceActiveChanged)
+
     Q_PROPERTY(bool stateNoGpsInfo READ stateNoGpsInfo WRITE setStateNoGpsInfo NOTIFY stateNoGpsInfoChanged)
     Q_PROPERTY(bool stateNoStationInfo READ stateNoStationInfo WRITE setStateNoStationInfo NOTIFY stateNoStationInfoChanged)
     Q_PROPERTY(bool stateUpdating READ stateUpdating WRITE setStateUpdating NOTIFY stateUpdatingChanged)
@@ -31,20 +29,53 @@ class endPointsClass: public QObject{
     Q_PROPERTY(bool folderStructureOK READ folderStructureOK WRITE setFolderStructureOK NOTIFY folderStructureOKChanged)
     Q_PROPERTY(bool updateStations READ updateStations WRITE setUpdateStations NOTIFY updateStationsChanged)
     Q_PROPERTY(bool updatingStations READ updatingStations WRITE setUpdatingStations NOTIFY updatingStationsChanged)
+    Q_PROPERTY(bool comAppOK READ comAppOK WRITE setComAppOK NOTIFY comAppOKChanged);
 
-    Q_PROPERTY(bool lineSelected READ lineSelected WRITE setLineSelected NOTIFY lineSelectedChanged)
+
+    //Operational Datas
+     Q_PROPERTY(bool lineSelected READ lineSelected WRITE setLineSelected NOTIFY lineSelectedChanged)
     Q_PROPERTY(QString currentLine READ currentLine WRITE setCurrentLine NOTIFY currentLineChanged)
     Q_PROPERTY(QString currentDirection READ currentDirection WRITE setCurrentDirection NOTIFY currentDirectionChanged)
     Q_PROPERTY(QString currentStation READ currentStation WRITE setCurrentStation NOTIFY currentStationChanged)
     Q_PROPERTY(QString nextStation READ nextStation WRITE setNextStation NOTIFY nextStationChanged)
-
+    Q_PROPERTY(QString actualLongitude READ actualLongitude WRITE setactualLongitude NOTIFY actualLongitudeChanged)
+    Q_PROPERTY(QString actualLatitude READ actualLatitude WRITE setactualLatitude NOTIFY actualLatitudeChanged)
     Q_PROPERTY(QString currentSpecialAnounce READ currentSpecialAnounce WRITE setCurrentSpecialAnounce NOTIFY currentSpecialAnounceChanged)
+    Q_PROPERTY(bool stateSpecialAnounceActive READ stateSpecialAnounceActive WRITE setStateSpecialAnounceActive NOTIFY stateSpecialAnounceActiveChanged)
+    Q_PROPERTY(bool stateRegularAnounceActive READ stateRegularAnounceActive WRITE setStateRegularAnounceActive NOTIFY stateRegularAnounceActiveChanged)
+
 
 public:
+    struct IIData{
+        unsigned VehicleID;
+        unsigned LifeSign;
+        bool GPSOk;
+        double GPSLongtitude;
+        double GPSLatitude;
+        unsigned VehicleSpeed;
+        bool AnyDoorOpen;
+        bool ProgressUpdate;
+    };
 
+    struct IOData{
+        unsigned LifeSign;
+        unsigned VehicleID;
+        unsigned ActiveLineInfo;
+        unsigned ActiveDirection;
+        QString ActiveStation;
+        unsigned ActiveStationId;
+        QString NextStation;
+        unsigned NextStationId;
+        QString ActiveAnounce;
+        QString ActiveCommercial;
+    };
+
+    IIData iiCom;
+    IOData ioCom;
     struct station;
+
     QList<QString> errList{0};
-    QMap<QString,QList<station*>*> allLineStations;
+    QMap<QString,QList<station*>> allLineStations;
     QList<station> currentLineStations;
     explicit endPointsClass(QObject *parent = nullptr);
     ~endPointsClass();
@@ -113,9 +144,18 @@ public:
     bool folderStructureOK() const;
     void setFolderStructureOK(bool newFolderStructureOK);
 
-    void addItemStations(QString ID, QString dir, QList<station *> *);
+    void addItemStations(QString ID, QString dir, QList<station *> );
 
     void selectLine(QString ID,QString dir,QList<station*>);
+
+    QString actualLongitude() const;
+    void setactualLongitude(const QString &newactualLongitude);
+
+    QString actualLatitude() const;
+    void setactualLatitude(const QString &newactualLatitude);
+
+    bool comAppOK() const;
+    void setComAppOK(bool newComAppOK);
 
 signals:
     void stateNoInitChanged();
@@ -160,6 +200,12 @@ signals:
 
     void folderStructureOKChanged();
 
+    void actualLongitudeChanged();
+
+    void actualLatitudeChanged();
+
+    void comAppOKChanged();
+
 private:
     bool m_stateNoInit;
     bool m_stateNoFolderFound;
@@ -182,6 +228,9 @@ private:
     bool m_lineSelected;
     bool m_dataImported;
     bool m_folderStructureOK;
+    QString m_actualLongitude;
+    QString m_actualLatitude;
+    bool m_comAppOK;
 };
 struct  endPointsClass::station{
     QString id;
@@ -190,20 +239,39 @@ struct  endPointsClass::station{
     QString longitude;
     QString soundOK;
 };
+
+
 inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
 {
-
+    ioCom.VehicleID =0;
+    ioCom.ActiveAnounce="Aktif Degil";
+    ioCom.ActiveCommercial="Aktif Degil";
+    ioCom.ActiveLineInfo= 0;
+    ioCom.LifeSign=0;
+    ioCom.ActiveStation="Yok";
+    ioCom.NextStationId=0;
+    ioCom.ActiveStationId=0;
+    ioCom.ActiveDirection=0;
+    ioCom.NextStation="";
+    iiCom.VehicleID=0;
+    iiCom.LifeSign=0;
+    iiCom.GPSOk=false;
+    iiCom.GPSLongtitude=0;
+    iiCom.GPSLatitude=0;
+    iiCom.VehicleSpeed=0;
+    iiCom.AnyDoorOpen=false;
+    iiCom.ProgressUpdate=false;
 }
 
 inline endPointsClass::~endPointsClass()
 {
-    for(QList<station*>* list : allLineStations){
-        for(station *st  : *list){
+    for(QList<station*> list : allLineStations){
+        for(station *st  : list){
             delete st;
         }
-        list->clear();
-        delete list;
+        list.clear();
     }
+    allLineStations.clear();
 }
 
 inline bool endPointsClass::stateNoInit() const
@@ -497,11 +565,11 @@ inline void endPointsClass::setFolderStructureOK(bool newFolderStructureOK)
     emit folderStructureOKChanged();
 }
 
-inline void endPointsClass::addItemStations(QString ID, QString dir, QList<station *>* stationAdd)
+inline void endPointsClass::addItemStations(QString ID, QString dir, QList<station *> stationAdd)
 {
     if(allLineStations.contains(ID+"_"+dir)){
-        allLineStations[ID+dir]->clear();
-        allLineStations[ID+dir]->append(*stationAdd);
+        allLineStations[ID+dir].clear();
+        allLineStations[ID+dir].append(stationAdd);
     }else{
         allLineStations.insert(ID+"_"+dir,stationAdd);
     }
@@ -512,5 +580,42 @@ inline void endPointsClass::selectLine(QString ID, QString dir, QList<station*>)
 
 }
 
+inline QString endPointsClass::actualLongitude() const
+{
+    return m_actualLongitude;
+}
 
+inline void endPointsClass::setactualLongitude(const QString &newactualLongitude)
+{
+    if (m_actualLongitude == newactualLongitude)
+        return;
+    m_actualLongitude = newactualLongitude;
+    emit actualLongitudeChanged();
+}
+
+inline QString endPointsClass::actualLatitude() const
+{
+    return m_actualLatitude;
+}
+
+inline void endPointsClass::setactualLatitude(const QString &newactualLatitude)
+{
+    if (m_actualLatitude == newactualLatitude)
+        return;
+    m_actualLatitude = newactualLatitude;
+    emit actualLatitudeChanged();
+}
+
+inline bool endPointsClass::comAppOK() const
+{
+    return m_comAppOK;
+}
+
+inline void endPointsClass::setComAppOK(bool newComAppOK)
+{
+    if (m_comAppOK == newComAppOK)
+        return;
+    m_comAppOK = newComAppOK;
+    emit comAppOKChanged();
+}
 #endif // ENDPOINTSCLASS_H
