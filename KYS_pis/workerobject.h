@@ -18,47 +18,52 @@ private:
     QTimer *timer2;
     QList<QString> lines;
     unsigned failCounterLifeSign;
+    unsigned failGPSCounter;
+
+    //Old containers
+    double GPSLatitude;
+    double GPSLongtitude;
 public:
     explicit workerObject(QObject *parent = nullptr, endPointsClass *endPoints = nullptr);
     ~workerObject();
 
 
-    bool checkFolderStations();
-    bool checkFileLines();
-    bool checkFileJson();
-    bool checkFolderVideo();
-    bool checkFolderAudioForLines();
-    bool checkFolderSpecialAnouncement();
+
 
     //Helpers
     void compareAndCopyFile(const QString& sourcePath, const QString& destinationPath);
-
+    void saveLogs();
     //Operations
     void readStations();
     void sendHttpReq();
     bool readJSON(bool useBackup);
     bool readLineLIST(bool useBackup);
     void saveDataStations(const QJsonArray& dataStations);
+
+    //Checkers
     bool checkConnection();
     bool checkService();
     void checkLifeSign(unsigned oldLifeSign, unsigned newLifeSign);
+    bool checkGPS();
+    bool checkFolderStations();
+    bool checkFolderVideo();
+    bool checkFolderAudioForLines();
+    bool checkFolderSpecialAnouncement();
+    bool checkFileLines();
+    bool checkFileJson();
+
+
     //If one fails cycle check starts for that
-    void enableCycleCheckFileLines(bool cycleCheckFileLines);
-    void enableCycleCheckJson(bool cycleCheckJson);
-    void enableCycleCheckVideos(bool cycleCheckVideos);
-    void enableCycleConnectionCheck(bool cycleCheckConnection);
-    void enableCycleAuidoCheck(bool cycleCheckAuido);
+    void enableCycleCheckUpdate(bool cycleCheckUpdate);
+    void enableCycleCheckRead(bool cycleCheckRead);
+    bool cycleCheckUpdate;
+    bool cycleCheckRead;
 
-    bool linesOK;
-    bool stationsOK;
-    bool GPSOK;
-    bool audioOK;
+    bool processBlockedConnection;
+    bool processBlockedFileLines;
+    bool processBlockedService;
 
-    bool cycleCheckFileLines;
-    bool cycleCheckJson;
-    bool cycleCheckVideos;
-    bool cycleCheckConnection;
-    bool cycleCheckAuido;
+
 
 
 

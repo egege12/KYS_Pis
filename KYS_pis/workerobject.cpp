@@ -1,5 +1,5 @@
 //
-//this->endPoints->setErrCode("İnternet bağlantısı mevcut değil.");
+//
 #include "workerobject.h"
 
 #include <QFile>
@@ -25,97 +25,17 @@ workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
 {
     this->endPoints = endPoints;
     this->failCounterLifeSign=0;
-    checkFolderStations();
-    checkFolderVideo();
-    checkFolderAudioForLines();
-
+    this->failGPSCounter=0;
+    this->GPSLatitude =0.0;
+    this->GPSLongtitude=0.0;
+    this->processBlockedConnection=false;
+    this->processBlockedFileLines=false;
+    this->processBlockedService=false;
 }
 
 workerObject::~workerObject()
 {
-    {
-        QString path = "C:/appKYS_Pis/PISLog";
-        QDir directory(path);
-
-        if (directory.exists()) {
-           //nothing to do
-        } else {
-           directory.mkpath(path);
-           this->endPoints->setErrCode("PISLog mevcut değil, oluşturuldu");
-        }
-    }
-    QString path= QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    QDir directory(path+"/appKYS_Pis/Log");
-    QDateTime currentDateTime = QDateTime::currentDateTime();
-    QString formattedDateTime = currentDateTime.toString("Dyyyy_MM_dd");
-
-
-    if(directory.exists()){
-        // do nothing
-    }else{
-        directory.mkpath(path+"/appKYS_Pis/Log");
-        this->endPoints->setErrCode("log dosyası bulunamadı ve oluşturuldu.");
-    }
-
-
-    QFile logFile(path+"/appKYS_Pis/Log/"+formattedDateTime+"_logs.PISLog");
-    if(logFile.exists()){
-        if (!logFile.open(QIODevice::Append)){
-            this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
-        }else{
-
-            QTextStream out(&logFile);
-             this->endPoints->setErrCode("Kayıt defterine kayıt edildi.");
-             foreach(QString logLine , this->endPoints->errList){
-                 if(!logLine.isEmpty()){
-                    out<<logLine<<Qt::endl;
-                 }
-            }
-            logFile.close();
-        }
-    }else{
-        if (!logFile.open(QIODevice::WriteOnly| QIODevice::Truncate )){
-             this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
-        }else{
-            QTextStream out(&logFile);
-             this->endPoints->setErrCode("Kayıt defterine kayıt edildi.");
-             foreach(QString logLine , this->endPoints->errList){
-                if(!logLine.isEmpty()){
-                    out<<logLine<<Qt::endl;
-                }
-            }
-            logFile.close();
-        }
-    }
-
-    QFile logFile2("C:/appKYS_Pis/PISLog/"+formattedDateTime+"_logs.PISLog");
-    if(logFile2.exists()){
-        if (!logFile2.open(QIODevice::Append  )){
-            this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
-        }else{
-            qint64 fileSize = logFile2.size();
-            logFile2.seek(fileSize);
-            QTextStream out2(&logFile2);
-            foreach(QString logLine2 , this->endPoints->errList){
-               out2<<logLine2<<Qt::endl;
-            }
-            logFile2.close();
-        }
-    }else{
-        if (!logFile2.open(QIODevice::WriteOnly| QIODevice::Truncate )){
-             this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
-        }else{
-            QTextStream out2(&logFile2);
-            foreach(QString logLine2 , this->endPoints->errList){
-               out2<<logLine2<<Qt::endl;
-            }
-            logFile2.close();
-        }
-    }
-    this->endPoints->errList.clear();
-
-
-
+    saveLogs();
 }
 
 bool workerObject::checkConnection()
@@ -124,18 +44,30 @@ QNetworkAccessManager manager;
 QNetworkRequest request(QUrl("https://www.google.com"));
 
 QNetworkReply *reply = manager.get(request);
+QEventLoop loop1;
+
+connect(reply,&QNetworkReply::finished,&loop1,&QEventLoop::quit,Qt::AutoConnection);
+loop1.exec();
 
 if (reply->error() == QNetworkReply::NoError) {
     // İnternet bağlantısı mevcut
+        if(!this->endPoints->stateNetwork()){
+            this->endPoints->setErrCode("-checkConnection- İnternet bağlantısı sağlandı");
+        }
         this->endPoints->setStateNetwork(true);
+        delete reply;
         return true;
 } else {
     // İnternet bağlantısı yok veya erişim hatası
+        if(this->endPoints->stateNetwork()){
+            this->endPoints->setErrCode("-checkConnection- İnternet bağlantısı yok");
+        }
         this->endPoints->setStateNetwork(false);
+        delete reply;
         return false;
 }
 
-delete reply;
+
 
 }
 
@@ -173,6 +105,27 @@ void workerObject::checkLifeSign(unsigned int oldLifeSign, unsigned int newLifeS
 
 }
 
+bool workerObject::checkGPS()
+{
+
+    if(!this->endPoints->iiCom.GPSOk){
+        return false;
+    }else{
+        if(this->endPoints->iiCom.GPSLatitude != this->GPSLatitude){
+            this->failGPSCounter=0;
+        }else if(this->endPoints->iiCom.GPSLongtitude != this->GPSLongtitude){
+            this->failGPSCounter=0;
+        }else{
+            ++this->failGPSCounter;
+        }
+        if((failGPSCounter>20) && this->endPoints->iiCom.VehicleSpeed>5){
+            return false;
+        }else{
+            return true;
+        }
+    }
+}
+
 bool workerObject::checkFolderStations()
 {
     bool folderStationsOK;
@@ -207,10 +160,8 @@ bool lineCsvOK;
         QFile file(filePath);
         if (file.exists()) {
            lineCsvOK = true;
-           enableCycleCheckFileLines(false);
         } else {
            lineCsvOK = false;
-           enableCycleCheckFileLines(true);
         }
 }
 return lineCsvOK;
@@ -261,7 +212,17 @@ bool jsonFileOK = true;
         } else {
            jsonFileOK = false;
         }
-return jsonFileOK;
+        return jsonFileOK;
+}
+
+void workerObject::enableCycleCheckUpdate(bool cycleCheckUpdate)
+{
+        this->cycleCheckUpdate=cycleCheckUpdate;
+}
+
+void workerObject::enableCycleCheckRead(bool cycleCheckRead)
+{
+        this->cycleCheckRead=cycleCheckRead;
 }
 
 bool workerObject::checkFolderVideo()
@@ -396,18 +357,100 @@ else
 }
 }
 
+void workerObject::saveLogs()
+{
+    {
+        QString path = "C:/appKYS_Pis/PISLog";
+        QDir directory(path);
+
+        if (directory.exists()) {
+           //nothing to do
+        } else {
+           directory.mkpath(path);
+           this->endPoints->setErrCode("PISLog mevcut değil, oluşturuldu");
+        }
+    }
+    QString path= QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    QDir directory(path+"/appKYS_Pis/Log");
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    QString formattedDateTime = currentDateTime.toString("Dyyyy_MM_dd");
+
+
+    if(directory.exists()){
+        // do nothing
+    }else{
+        directory.mkpath(path+"/appKYS_Pis/Log");
+        this->endPoints->setErrCode("log dosyası bulunamadı ve oluşturuldu.");
+    }
+
+
+    QFile logFile1(path+"/appKYS_Pis/Log/"+formattedDateTime+"_logs.PISLog");
+    if(logFile1.exists()){
+        if (!logFile1.open(QIODevice::Append)){
+            this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
+        }else{
+
+            QTextStream out1(&logFile1);
+             foreach(QString logLine1 , this->endPoints->errList){
+                 if(!logLine1.isEmpty()){
+                    out1<<logLine1<<Qt::endl;
+                 }
+            }
+            logFile1.close();
+        }
+    }else{
+        if (!logFile1.open(QIODevice::WriteOnly| QIODevice::Truncate )){
+             this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
+        }else{
+            QTextStream out1(&logFile1);
+             foreach(QString logLine1 , this->endPoints->errList){
+                if(!logLine1.isEmpty()){
+                    out1<<logLine1<<Qt::endl;
+                }
+            }
+            logFile1.close();
+        }
+    }
+
+    QFile logFile2("C:/appKYS_Pis/PISLog/"+formattedDateTime+"_logs.PISLog");
+    if(logFile2.exists()){
+        if (!logFile2.open(QIODevice::Append  )){
+            this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
+        }else{
+            qint64 fileSize = logFile2.size();
+            logFile2.seek(fileSize);
+            QTextStream out2(&logFile2);
+            foreach(QString logLine2 , this->endPoints->errList){
+               out2<<logLine2<<Qt::endl;
+            }
+            logFile2.close();
+        }
+    }else{
+        if (!logFile2.open(QIODevice::WriteOnly| QIODevice::Truncate )){
+             this->endPoints->setErrCode("Yapılan değişiklikler kayıt defterine işlenemedi");
+        }else{
+            QTextStream out2(&logFile2);
+            foreach(QString logLine2 , this->endPoints->errList){
+               out2<<logLine2<<Qt::endl;
+            }
+            logFile2.close();
+        }
+    }
+    this->endPoints->errList.clear();
+}
+
 void workerObject::readStations()
 {
-    checkFileLines();
-    bool stationsRead;
+    this->endPoints->setFolderStructureOK(checkFolderAudioForLines()&&checkFolderStations()&&checkFolderVideo()&&checkFileLines());
+    bool stationsRead = false;
 
-    this->linesOK = readLineLIST(true);
+    bool processBlockedFileLines = !readLineLIST(true);
 
     if(checkFileJson()){
         stationsRead = readJSON(false);
     }else{
-        if(linesOK){
-           if(checkConnection() && checkService()){
+        if(!processBlockedFileLines){
+            if(!((processBlockedService = !(checkConnection())) || (processBlockedConnection= !(checkService())))){
                sendHttpReq();
                stationsRead = readJSON(false);
            }else{
@@ -420,40 +463,17 @@ void workerObject::readStations()
            stationsRead = readJSON(true);
         }
     }
+    this->enableCycleCheckRead(!stationsRead);
     if (stationsRead){
         this->endPoints->setErrCode("-readStations- istasyonlar okundu.");
     }else{
         this->endPoints->setErrCode("-readStations- istasyonlar okunamadı.");
     }
-    this->stationsOK = stationsRead;
+
+    this->endPoints->setDataImported(stationsRead);
 
 }
 
-void workerObject::enableCycleCheckFileLines(bool cycleCheckFileLines)
-{
-    this-> cycleCheckFileLines = cycleCheckFileLines;
-}
-
-void workerObject::enableCycleCheckJson(bool cycleCheckJson)
-{
-    this-> cycleCheckJson = cycleCheckJson;
-}
-
-
-void workerObject::enableCycleCheckVideos(bool cycleCheckVideos)
-{
-    this-> cycleCheckVideos = cycleCheckVideos;
-}
-
-void workerObject::enableCycleConnectionCheck(bool cycleCheckConnection)
-{
-    this-> cycleCheckConnection = cycleCheckConnection;
-}
-
-void workerObject::enableCycleAuidoCheck(bool cycleCheckAuido)
-{
-    this-> cycleCheckConnection = cycleCheckAuido;
-}
 
 void workerObject::startObject()
 {
@@ -466,8 +486,8 @@ void workerObject::startObject()
     QObject::connect(timer2,&QTimer::timeout,this,&workerObject::cycleCall,Qt::AutoConnection);
     timer2->start();
 
+
     QObject::connect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::updateList,Qt::AutoConnection);
-    QObject::connect(this,&workerObject::doneUpdate,this->endPoints,&endPointsClass::setUpdatingStations,Qt::AutoConnection);
     readStations();
 }
 
@@ -481,7 +501,6 @@ void workerObject::stopObject()
     delete timer2;
     //Nothing here
     QObject::disconnect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::updateList);
-    QObject::disconnect(this,&workerObject::doneUpdate,this->endPoints,&endPointsClass::setUpdatingStations);
 }
 void workerObject::saveDataStations(const QJsonArray& dataStations)
 {
@@ -622,10 +641,12 @@ void workerObject::sendHttpReq()
 
 bool workerObject::readJSON(bool useBackup)
 {
-    bool statJson;
+    bool statJson = true;
     QString filePath = useBackup? QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)+"/appKYS_Pis/Backups/dataStations.json":"C:/appKYS_Pis/PISStations/dataStations.json"; // Kontrol edilecek dosyanın yolu
-
     QFile file(filePath);
+    if(useBackup){
+        this->endPoints->setErrCode("-readJSON- Yedek veri kullanılacak.");
+    }
     if (file.exists()) {
         if (!file.open(QIODevice::ReadOnly)) {
            this->endPoints->setErrCode("-readJSON- JSON dosyası açılamadı");
@@ -719,6 +740,7 @@ bool workerObject::readJSON(bool useBackup)
             debug.close();
         }
     } else {
+
         this->endPoints->setErrCode("-readJSON- dataStations.json açılamadı");
         return false;
     }
@@ -769,8 +791,10 @@ bool workerObject::readLineLIST(bool useBackup)
                             }
                             lineNumber++;
                         }
+                        this->endPoints->setErrCode("-readLineLIST-dataLines.csv yedek konumundan kullanıldı.");
                         return true;
                     }else{
+                        this->endPoints->setErrCode("-readLineLIST-dataLines.csv yedek konumunda bulunmuyor.");
                         return false;
                     }
             }else{
@@ -947,42 +971,52 @@ void workerObject::rwComApp()
 
 void workerObject::cycleCall()
 {   // Setters
-    emit this->endPoints->setStateNetwork(this->checkConnection());
-
+    this->checkConnection();
+    if(this->endPoints->errList.size()>10){
+        saveLogs();
+    }
     //Cycle operation check
 
 
     //Cycle operation exits
 
-    if(cycleCheckFileLines){
-        enableCycleCheckFileLines(!checkFileLines());
-    }
-    if(cycleCheckJson){
-        bool checkJson = checkFileJson();
-        enableCycleCheckJson(!checkJson);
-        if(checkJson){
-           readLineLIST(true);
-        }
-    }
+    //if(cycleCheckFileLines){
+    //    enableCycleCheckFileLines(!checkFileLines());
+    //}
+    //if(cycleCheckJson){
+    //    bool checkJson = checkFileJson();
+    //    enableCycleCheckJson(!checkJson);
+    //    if(checkJson){
+    //       readLineLIST(true);
+    //    }
+    //}
 
 
 }
 
 void workerObject::updateList()
 {
-    bool updateComplete;
-    this->linesOK = readLineLIST(false);
+    bool updateComplete = false;
+    bool processBlockedFileLines = !readLineLIST(false);
 
-    if(linesOK){
-        if(checkConnection() && checkService()){
+    if(!processBlockedFileLines){
+        if(!((processBlockedService = !(checkConnection())) || (processBlockedConnection= !(checkService())))){
            sendHttpReq();
            updateComplete = readJSON(false);
         }else{
-            this->endPoints->setErrCode("-updateList- Bağlantı sorunu veya servis çalışmadığı için güncelleme yapılamadı.");
+           this->endPoints->setErrCode("-updateList- Bağlantı sorunu veya servis çalışmadığı için güncelleme yapılamadı.");
+           updateComplete = false;
         }
     }else{
         readLineLIST(true);
         this->endPoints->setErrCode("-updateList- dataLines.csv bulunamadığı için güncelleme yapılamadı.");
+        updateComplete = false;
+    }
+    this->enableCycleCheckUpdate(!updateComplete);
+    if(updateComplete){
+        emit this->endPoints->updateSuccesfull();
+    }else{
+        emit this->endPoints->updateFailed();
     }
 
 }

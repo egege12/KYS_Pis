@@ -15,25 +15,22 @@ class endPointsClass: public QObject{
 
     Q_OBJECT
 
-    Q_PROPERTY(bool stateNoInit READ stateNoInit WRITE setStateNoInit NOTIFY stateNoInitChanged)
-    Q_PROPERTY(bool stateDispWatchOnVideoArea READ stateDispWatchOnVideoArea WRITE setStateDispWatchOnVideoArea NOTIFY stateDispWatchOnVideoAreaChanged)
-    Q_PROPERTY(bool stateDispTextOnStationArea READ stateDispTextOnStationArea WRITE setStateDispTextOnStationArea NOTIFY stateDispTextOnStationAreaChanged)
+    Q_PROPERTY(bool stateDispWatchOnVideoArea READ stateDispWatchOnVideoArea WRITE setStateDispWatchOnVideoArea NOTIFY stateDispWatchOnVideoAreaChanged)/*cyclecall*/
+    Q_PROPERTY(bool stateDispTextOnStationArea READ stateDispTextOnStationArea WRITE setStateDispTextOnStationArea NOTIFY stateDispTextOnStationAreaChanged)/*cyclecall*/
 
-    Q_PROPERTY(bool stateNoGpsInfo READ stateNoGpsInfo WRITE setStateNoGpsInfo NOTIFY stateNoGpsInfoChanged)
-    Q_PROPERTY(bool stateNoStationInfo READ stateNoStationInfo WRITE setStateNoStationInfo NOTIFY stateNoStationInfoChanged)
-    Q_PROPERTY(bool stateUpdating READ stateUpdating WRITE setStateUpdating NOTIFY stateUpdatingChanged)
+    Q_PROPERTY(bool stateNoGpsInfo READ stateNoGpsInfo WRITE setStateNoGpsInfo NOTIFY stateNoGpsInfoChanged)/*cyclecall*/
+    Q_PROPERTY(bool stateNoStationInfo READ stateNoStationInfo WRITE setStateNoStationInfo NOTIFY stateNoStationInfoChanged)/*cyclecall*/
     Q_PROPERTY(bool stateNetwork READ stateNetwork WRITE setStateNetwork NOTIFY stateNetworkChanged)
     Q_PROPERTY(QString errCode READ errCode WRITE setErrCode NOTIFY errCodeChanged)
 
-    Q_PROPERTY(bool dataImported READ dataImported WRITE setDataImported NOTIFY dataImportedChanged)
-    Q_PROPERTY(bool folderStructureOK READ folderStructureOK WRITE setFolderStructureOK NOTIFY folderStructureOKChanged)
+    Q_PROPERTY(bool dataImported READ dataImported WRITE setDataImported NOTIFY dataImportedChanged)                    /*Set when data imported and data is free to use, UI should activate driver select area*/
+    Q_PROPERTY(bool folderStructureOK READ folderStructureOK WRITE setFolderStructureOK NOTIFY folderStructureOKChanged)/**/
     Q_PROPERTY(bool updateStations READ updateStations WRITE setUpdateStations NOTIFY updateStationsChanged)
-    Q_PROPERTY(bool updatingStations READ updatingStations WRITE setUpdatingStations NOTIFY updatingStationsChanged)
     Q_PROPERTY(bool comAppOK READ comAppOK WRITE setComAppOK NOTIFY comAppOKChanged);
 
 
     //Operational Datas
-     Q_PROPERTY(bool lineSelected READ lineSelected WRITE setLineSelected NOTIFY lineSelectedChanged)
+    Q_PROPERTY(bool lineSelected READ lineSelected WRITE setLineSelected NOTIFY lineSelectedChanged)
     Q_PROPERTY(QString currentLine READ currentLine WRITE setCurrentLine NOTIFY currentLineChanged)
     Q_PROPERTY(QString currentDirection READ currentDirection WRITE setCurrentDirection NOTIFY currentDirectionChanged)
     Q_PROPERTY(QString currentStation READ currentStation WRITE setCurrentStation NOTIFY currentStationChanged)
@@ -79,8 +76,7 @@ public:
     QList<station> currentLineStations;
     explicit endPointsClass(QObject *parent = nullptr);
     ~endPointsClass();
-    bool stateNoInit() const;
-    void setStateNoInit(bool newStateNoInit);
+
 
     bool stateNoFolderFound() const;
     void setStateNoFolderFound(bool newStateNoFolderFound);
@@ -103,17 +99,11 @@ public:
     bool stateNoStationInfo() const;
     void setStateNoStationInfo(bool newStateNoStationInfo);
 
-    bool stateUpdating() const;
-    void setStateUpdating(bool newStateUpdating);
-
     QString errCode() const;
     void setErrCode(const QString &newErrCode);
 
     bool updateStations() const;
     void setUpdateStations(bool newUpdateStations);
-
-    bool updatingStations() const;
-    void setUpdatingStations(bool newUpdatingStations);
 
     bool stateNetwork() const;
     void setStateNetwork(bool newStateNetwork);
@@ -158,8 +148,6 @@ public:
     void setComAppOK(bool newComAppOK);
 
 signals:
-    void stateNoInitChanged();
-
     void stateNoFolderFoundChanged();
 
     void stateDispWatchOnVideoAreaChanged();
@@ -173,8 +161,6 @@ signals:
     void stateNoGpsInfoChanged();
 
     void stateNoStationInfoChanged();
-
-    void stateUpdatingChanged();
 
     void errCodeChanged();
 
@@ -206,8 +192,10 @@ signals:
 
     void comAppOKChanged();
 
+    void updateSuccesfull();
+    void updateFailed();
+
 private:
-    bool m_stateNoInit;
     bool m_stateNoFolderFound;
     bool m_stateDispWatchOnVideoArea;
     bool m_stateDispTextOnStationArea;
@@ -215,10 +203,8 @@ private:
     bool m_stateRegularAnounceActive;
     bool m_stateNoGpsInfo;
     bool m_stateNoStationInfo;
-    bool m_stateUpdating;
     QString m_errCode;
     bool m_updateStations;
-    bool m_updatingStations;
     bool m_stateNetwork;
     QString m_currentLine;
     QString m_currentStation;
@@ -261,6 +247,28 @@ inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
     iiCom.VehicleSpeed=0;
     iiCom.AnyDoorOpen=false;
     iiCom.ProgressUpdate=false;
+
+     m_stateNoFolderFound=false;
+     m_stateDispWatchOnVideoArea=false;
+     m_stateDispTextOnStationArea=false;
+     m_stateSpecialAnounceActive=false;
+     m_stateRegularAnounceActive=false;
+     m_stateNoGpsInfo=false;
+     m_stateNoStationInfo=false;
+     m_errCode="null";
+     m_updateStations=false;
+     m_stateNetwork=false;
+     m_currentLine="null";
+     m_currentStation="null";
+     m_currentSpecialAnounce="null";
+     m_currentDirection="null";
+     m_nextStation="null";
+     m_lineSelected=false;
+     m_dataImported=false;
+     m_folderStructureOK=false;
+     m_actualLongitude="null";
+     m_actualLatitude="null";
+     m_comAppOK=false;
 }
 
 inline endPointsClass::~endPointsClass()
@@ -274,18 +282,6 @@ inline endPointsClass::~endPointsClass()
     allLineStations.clear();
 }
 
-inline bool endPointsClass::stateNoInit() const
-{
-    return m_stateNoInit;
-}
-
-inline void endPointsClass::setStateNoInit(bool newStateNoInit)
-{
-    if (m_stateNoInit == newStateNoInit)
-        return;
-    m_stateNoInit = newStateNoInit;
-    emit stateNoInitChanged();
-}
 
 inline bool endPointsClass::stateNoFolderFound() const
 {
@@ -378,18 +374,6 @@ inline void endPointsClass::setStateNoStationInfo(bool newStateNoStationInfo)
     emit stateNoStationInfoChanged();
 }
 
-inline bool endPointsClass::stateUpdating() const
-{
-    return m_stateUpdating;
-}
-
-inline void endPointsClass::setStateUpdating(bool newStateUpdating)
-{
-    if (m_stateUpdating == newStateUpdating)
-        return;
-    m_stateUpdating = newStateUpdating;
-    emit stateUpdatingChanged();
-}
 
 inline QString endPointsClass::errCode() const
 {
@@ -423,19 +407,6 @@ inline void endPointsClass::setUpdateStations(bool newUpdateStations)
     emit updateStationsChanged();
 }
 
-inline bool endPointsClass::updatingStations() const
-{
-    return m_updatingStations;
-}
-
-inline void endPointsClass::setUpdatingStations(bool newUpdatingStations)
-{
-    if (m_updatingStations == newUpdatingStations)
-        return;
-    m_updatingStations = newUpdatingStations;
-    emit updatingStationsChanged();
-}
-
 inline bool endPointsClass::stateNetwork() const
 {
     return m_stateNetwork;
@@ -445,11 +416,7 @@ inline void endPointsClass::setStateNetwork(bool newStateNetwork)
 {
     if (m_stateNetwork == newStateNetwork)
         return;
-    m_stateNetwork = newStateNetwork;
-    if(!m_stateNetwork){
-        setErrCode("İnternet bağlantısı kesildi");
-    }else
-        setErrCode("İnternet bağlantısı sağlandı");
+    m_stateNetwork = newStateNetwork;    
     emit stateNetworkChanged();
 }
 
