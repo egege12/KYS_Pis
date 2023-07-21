@@ -33,7 +33,7 @@ public:
     //Helpers
     void compareAndCopyFile(const QString& sourcePath, const QString& destinationPath);
     void saveLogs();
-    //Operations
+    void deleteOldestFiles(QString folderPath);    //Operations
     void readStations();
     void sendHttpReq();
     bool readJSON(bool useBackup);
@@ -54,14 +54,14 @@ public:
 
 
     //If one fails cycle check starts for that
-    void enableCycleCheckUpdate(bool cycleCheckUpdate);
-    void enableCycleCheckRead(bool cycleCheckRead);
-    bool cycleCheckUpdate;
-    bool cycleCheckRead;
+    /*CYCLE OPERATIONS*/void enableCycleCheckUpdate(bool cycleCheckUpdate);
+    /*CYCLE OPERATIONS*/void enableCycleCheckRead(bool cycleCheckRead);
+    /*CYCLE OPERATIONS*/bool cycleCheckUpdate;
+    /*CYCLE OPERATIONS*/bool cycleCheckRead;
 
-    bool processBlockedConnection;
-    bool processBlockedFileLines;
-    bool processBlockedService;
+    /*CYCLE OPERATIONS*/bool processBlockedConnection;
+    /*CYCLE OPERATIONS*/bool processBlockedFileLines;
+    /*CYCLE OPERATIONS*/bool processBlockedService;
 
 
 

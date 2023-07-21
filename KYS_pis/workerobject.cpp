@@ -17,8 +17,9 @@
 #include <iterator>
 #define COM_INTERVAL 1000
 #define CYCLETIMER_INTERVAL 500
-
-
+#define LOG_SAVE_COUNTER 10
+#define MIN_LOG_DEL_SIZE 100
+#define MAX_LOG_SIZE 1024
 
 
 workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
@@ -359,6 +360,7 @@ else
 
 void workerObject::saveLogs()
 {
+    if(this->endPoints->errList.size()>LOG_SAVE_COUNTER){
     {
         QString path = "C:/appKYS_Pis/PISLog";
         QDir directory(path);
@@ -437,8 +439,47 @@ void workerObject::saveLogs()
         }
     }
     this->endPoints->errList.clear();
+    }
 }
 
+void workerObject::deleteOldestFiles(QString folderPath)
+{
+    QDir folder(folderPath);
+    qint64 totalSize = 0;
+
+    QFileInfoList fileInfoList = folder.entryInfoList(QDir::Files | QDir::NoDotAndDotDot, QDir::Time);
+
+    for (const QFileInfo& fileInfo : fileInfoList) {
+        totalSize += fileInfo.size();
+    }
+
+    this->endPoints->setErrCode("Klasör boyutu:" + QString::number(totalSize / (1024 * 1024)) + "MB");
+
+        if (totalSize > MAX_LOG_SIZE) {
+    this->endPoints->setErrCode( "Klasör boyutu MAX_LOG_SIZE'ı geçti!");
+    qint64 sizeToDelete = totalSize - MAX_LOG_SIZE;
+    int deletedFilesCount = 0;
+
+    for (const QFileInfo& fileInfo : fileInfoList) {
+        if (fileInfo.isFile() && fileInfo.size() > MIN_LOG_DEL_SIZE) {
+            this->endPoints->setErrCode("Dosya siliniyor:" + fileInfo.fileName());
+            if (QFile::remove(fileInfo.filePath())) {
+               totalSize -= fileInfo.size();
+               deletedFilesCount++;
+              this->endPoints->setErrCode("Dosya başarıyla silindi.");
+            } else {
+              this->endPoints->setErrCode("Dosya silinirken bir hata oluştu.");
+            }
+            // Klasör boyutu hedefi aştıysa döngüyü sonlandır
+            if (totalSize <= MAX_LOG_SIZE) {
+               break;
+            }
+        }
+    }
+
+    this->endPoints->setErrCode(QString::number(deletedFilesCount) + "dosya silindi.");
+    }
+}
 void workerObject::readStations()
 {
     this->endPoints->setFolderStructureOK(checkFolderAudioForLines()&&checkFolderStations()&&checkFolderVideo()&&checkFileLines());
@@ -970,26 +1011,39 @@ void workerObject::rwComApp()
 }
 
 void workerObject::cycleCall()
-{   // Setters
-    this->checkConnection();
-    if(this->endPoints->errList.size()>10){
-        saveLogs();
-    }
+{
+
+    // Setters
+    checkConnection();
+    saveLogs();
+
+
     //Cycle operation check
+    if(cycleCheckRead){
+        if(processBlockedConnection){
 
+        }
+        if(processBlockedFileLines){
 
+        }
+        if(processBlockedService){
+
+        }
+    }
+    if(cycleCheckUpdate){
+        if(processBlockedConnection){
+
+        }
+        if(processBlockedFileLines){
+
+        }
+        if(processBlockedService){
+
+        }
+    }
     //Cycle operation exits
 
-    //if(cycleCheckFileLines){
-    //    enableCycleCheckFileLines(!checkFileLines());
-    //}
-    //if(cycleCheckJson){
-    //    bool checkJson = checkFileJson();
-    //    enableCycleCheckJson(!checkJson);
-    //    if(checkJson){
-    //       readLineLIST(true);
-    //    }
-    //}
+
 
 
 }
@@ -1015,6 +1069,7 @@ void workerObject::updateList()
     this->enableCycleCheckUpdate(!updateComplete);
     if(updateComplete){
         emit this->endPoints->updateSuccesfull();
+        this->endPoints->setUpdateStations(true);
     }else{
         emit this->endPoints->updateFailed();
     }
