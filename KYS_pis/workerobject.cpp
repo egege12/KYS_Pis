@@ -18,8 +18,8 @@
 #define COM_INTERVAL 1000
 #define CYCLETIMER_INTERVAL 500
 #define LOG_SAVE_COUNTER 10
-#define MIN_LOG_DEL_SIZE 100
-#define MAX_LOG_SIZE 1024
+#define MIN_LOG_DEL_SIZE 104857600
+#define MAX_LOG_SIZE 1073741824
 
 
 workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
@@ -186,6 +186,7 @@ bool jsonFileOK = true;
            QJsonDocument fileDoc = QJsonDocument::fromJson(fileData);
            if (!fileDoc.isArray()) {
                this->endPoints->setErrCode("-checkFileJson- JSON verisi geçersiz");
+                   file.remove(filePath);
                    jsonFileOK = false;
            }
 
@@ -360,18 +361,19 @@ else
 
 void workerObject::saveLogs()
 {
-    if(this->endPoints->errList.size()>LOG_SAVE_COUNTER){
+
     {
         QString path = "C:/appKYS_Pis/PISLog";
         QDir directory(path);
 
         if (directory.exists()) {
-           //nothing to do
+               //qDebug()<<"PISLog klasörü var";
         } else {
            directory.mkpath(path);
            this->endPoints->setErrCode("PISLog mevcut değil, oluşturuldu");
         }
     }
+
     QString path= QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     QDir directory(path+"/appKYS_Pis/Log");
     QDateTime currentDateTime = QDateTime::currentDateTime();
@@ -439,7 +441,7 @@ void workerObject::saveLogs()
         }
     }
     this->endPoints->errList.clear();
-    }
+
 }
 
 void workerObject::deleteOldestFiles(QString folderPath)
@@ -976,7 +978,21 @@ void workerObject::rwComApp()
 
 
     }else{
-        this->endPoints->setErrCode("-rwComApp-ApptoPIS.json dosyası yok,APP ile haberleşme sağlanamaz");
+        this->endPoints->setErrCode("-rwComApp-ApptoPIS.json dosyası yok,APP ile haberleşme sağlanamaz, ancak dosya oluşturuldu.");
+        if (appToPis.open(QIODevice::WriteOnly)) {
+            QJsonObject fixedObject;
+            fixedObject.insert("VehicleID",0);
+            fixedObject.insert("LifeSign",0);
+            fixedObject.insert("GPSOk","false");
+            fixedObject.insert("GPSLongtitude",0);
+            fixedObject.insert("GPSLatitude",0);
+            fixedObject.insert("VehicleSpeed",0);
+            fixedObject.insert("AnyDoorOpen","true");
+            fixedObject.insert("ProgressUpdate","true");
+            QJsonDocument QJsonDocument(fixedObject);
+            appToPis.write(QJsonDocument.toJson());
+            appToPis.close();
+        }
     }
 
     //WRITE
@@ -1014,31 +1030,44 @@ void workerObject::cycleCall()
 {
 
     // Setters
-    checkConnection();
-    saveLogs();
 
+    if(this->endPoints->errList.size()>LOG_SAVE_COUNTER){
+    saveLogs();
+    }
 
     //Cycle operation check
     if(cycleCheckRead){
         if(processBlockedConnection){
-
+            if(checkConnection()){
+                this->readStations();
+            }
         }
         if(processBlockedFileLines){
-
+            if(checkFileLines() && readLineLIST(false)){
+                this->readStations();
+            }
         }
         if(processBlockedService){
-
+            if(checkService()){
+                this->readStations();
+            }
         }
     }
     if(cycleCheckUpdate){
         if(processBlockedConnection){
-
+            if(checkConnection()){
+                this->updateList();
+            }
         }
         if(processBlockedFileLines){
-
+            if(checkFileLines() && readLineLIST(false)){
+                this->updateList();
+            }
         }
         if(processBlockedService){
-
+            if(checkService()){
+                this->updateList();
+            }
         }
     }
     //Cycle operation exits
@@ -1050,28 +1079,31 @@ void workerObject::cycleCall()
 
 void workerObject::updateList()
 {
-    bool updateComplete = false;
-    bool processBlockedFileLines = !readLineLIST(false);
+    if(this->endPoints->updateStations()){
+        bool updateComplete = false;
+        bool processBlockedFileLines = !readLineLIST(false);
 
-    if(!processBlockedFileLines){
-        if(!((processBlockedService = !(checkConnection())) || (processBlockedConnection= !(checkService())))){
-           sendHttpReq();
-           updateComplete = readJSON(false);
+        if(!processBlockedFileLines){
+            if(!((processBlockedService = !(checkConnection())) || (processBlockedConnection= !(checkService())))){
+                sendHttpReq();
+                updateComplete = readJSON(false);
+            }else{
+                this->endPoints->setErrCode("-updateList- Bağlantı sorunu veya servis çalışmadığı için güncelleme yapılamadı.");
+                updateComplete = false;
+            }
         }else{
-           this->endPoints->setErrCode("-updateList- Bağlantı sorunu veya servis çalışmadığı için güncelleme yapılamadı.");
-           updateComplete = false;
+            readLineLIST(true);
+            this->endPoints->setErrCode("-updateList- dataLines.csv bulunamadığı için güncelleme yapılamadı.");
+            updateComplete = false;
         }
-    }else{
-        readLineLIST(true);
-        this->endPoints->setErrCode("-updateList- dataLines.csv bulunamadığı için güncelleme yapılamadı.");
-        updateComplete = false;
-    }
-    this->enableCycleCheckUpdate(!updateComplete);
-    if(updateComplete){
-        emit this->endPoints->updateSuccesfull();
-        this->endPoints->setUpdateStations(true);
-    }else{
-        emit this->endPoints->updateFailed();
+        this->enableCycleCheckUpdate(!updateComplete);
+        if(updateComplete){
+            emit this->endPoints->updateSuccesfull();
+            this->endPoints->setUpdateStations(true);
+        }else{
+            emit this->endPoints->updateFailed();
+        }
+        this->endPoints->setDataImported(updateComplete);
     }
 
 }

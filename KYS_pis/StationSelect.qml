@@ -1,11 +1,8 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-Item {
 
+Item {
     Rectangle {
-        StationSelect{
-            id:aliasitem
-        }
         anchors.fill: parent
         color:"transparent"
 
@@ -21,43 +18,31 @@ Item {
                 disableButtonClick: false
                 buttonText: ""
                 onButtonClicked:{
-                    stack.push("qrc:/driverMidArea.qml");
+                    stack.push("qrc:/driverDirectionSelection.qml");
 
                 }
             }
-
             Rectangle {
-                id: linesArea
+                id: stationsArea
                 width: parent.width-buttonBack.width
                 anchors.top:parent.top
                 anchors.bottom: parent.bottom
                 anchors.left : buttonBack.right
                 anchors.leftMargin: 20;
                 color:"transparent"
-                property bool dataImported: false
+                property alias aliasitem:stationsArea
+                property string viewLine: ""
 
-                // dataImportedChanged sinyali gözlemlemek için signalhandler
-                Connections {
-                    target: dataPoints
-                    onDataImportedChanged: {
-                        dataImported = dataPoints.dataImported
-                        if (dataImported) {
-                            createBoxes()
-                        }
-                    }
-                }
+
+
                 Component.onCompleted: {
-                    dataImported = dataPoints.dataImported
-                    if (dataImported) {
-                        createBoxes()
-                    }
+                        createBoxes();
                 }
-
 
 
                 function createBoxes() {
                         // dataPoints.getLineList() yönteminden hat numaralarını al
-                        var lines = dataPoints.getLineList()
+                        var stations = dataPoints.getStations(aliasitem1.viewLine)
 
                         // Hat numaralarını 10'arlı gruplar halinde bölen bir fonksiyon
                         function chunkArray(arr, size) {
@@ -68,29 +53,24 @@ Item {
                             return chunkedArr
                         }
 
-                        var lineChunks = chunkArray(lines, 6)
+                        var lineChunks = chunkArray(stations, 3)
 
                         // Kutu oluşturma fonksiyonu
                         function createBox(x, y, text) {
                             var component = Qt.createComponent("MenuButton.qml")
                             if (component.status === Component.Ready) {
-                                var button = component.createObject(linesArea, {
+                                var button = component.createObject(stationsArea, {
                                     "x": x,
                                     "y": y,
                                     "buttonText": text,
-                                    "width": 100,
+                                    "width": 200,
                                     "height": 40,
-                                    "disableButtonClick": false,
+                                    "disableButtonClick": true,
                                     "size" : 18
+
                                 })
                                 if (button === null) {
                                     console.log("Error creating button")
-                                }else{
-                                    button.buttonClicked.connect(function(){
-                                        aliasitem.viewLine= button.buttonText;
-                                        stack.push("qrc:/StationSelect.qml");
-                                    }
-                                        )
                                 }
                             } else {
                                 console.log("Error loading MenuButton.qml")
@@ -107,7 +87,7 @@ Item {
 
                             for (var j = 0; j < chunk.length; j++) {
                                 createBox(xPosition, yPosition, chunk[j])
-                                xPosition += 100 + spacing
+                                xPosition += 200 + spacing
                             }
 
                             xPosition = 0

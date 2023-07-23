@@ -78,6 +78,7 @@ public:
     ~endPointsClass();
 
 
+
     bool stateNoFolderFound() const;
     void setStateNoFolderFound(bool newStateNoFolderFound);
 
@@ -194,7 +195,11 @@ signals:
 
     void updateSuccesfull();
     void updateFailed();
-
+public slots:
+    /*Application functions*/
+    QList<QString> getLineList();
+    QList<QString> getStations(QString lineID);
+    /*Application functions*/
 private:
     bool m_stateNoFolderFound;
     bool m_stateDispWatchOnVideoArea;
@@ -280,6 +285,25 @@ inline endPointsClass::~endPointsClass()
         list.clear();
     }
     allLineStations.clear();
+}
+
+inline QList<QString> endPointsClass::getLineList()
+{
+    QList<QString> lines;
+    for(const QString keys : allLineStations.keys()){
+        lines.append(keys);
+    }
+    return lines;
+}
+
+inline QList<QString> endPointsClass::getStations(QString lineID)
+{
+    QList<QString> stations;
+    if(allLineStations.contains(lineID))
+    for(station*  stationsLine : allLineStations.value(lineID)){
+        stations.append(stationsLine->name);
+    }
+    return stations;
 }
 
 

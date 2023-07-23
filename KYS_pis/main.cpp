@@ -24,11 +24,15 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     // Birinci QML dosyası ekleme
     const QUrl url("qrc:/Main.qml");
-
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
+        &app, [url](QObject *obj, const QUrl &objUrl) {
+            if (!obj && url == objUrl)
+                QCoreApplication::exit(-1);
+        }, Qt::QueuedConnection);
 
     //End point class definition should be done before engine load but initilized
     QQmlContext * Context1 = engine.rootContext();
-    Context1->setContextProperty("endPoints", endPoints);
+    Context1->setContextProperty("dataPoints", endPoints);
 
     engine.load(url);
 

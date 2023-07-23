@@ -65,8 +65,6 @@ public:
 
 
 
-
-
 public slots:
 
     void startObject();

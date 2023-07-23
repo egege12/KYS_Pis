@@ -15,6 +15,7 @@ Rectangle {
     property color hoveredColor : "#4A4A4A"
     property real imageRatio : 0.8
     property string buttonText: ""
+    property real size : 12
     height: width
     radius: width/8
     opacity : buttonRectangle.buttonOpacity
@@ -32,11 +33,11 @@ Rectangle {
     }
     Text{
 
-        anchors.top:image.bottom
+        anchors.top: buttonImageSource!=""? (image.bottom) : parent.top
         anchors.topMargin:5
         anchors.horizontalCenter: parent.horizontalCenter
         text:buttonText
-        font.pixelSize: 25
+        font.pixelSize: buttonImageSource!=""? (25) : size
         elide: Text.ElideLeft
         antialiasing: true
         font.hintingPreference: Font.PreferNoHinting
