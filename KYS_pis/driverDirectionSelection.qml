@@ -3,9 +3,8 @@ import QtQuick.Controls 2.15
 Item {
 
     Rectangle {
-        StationSelect{
-            id:aliasitem
-        }
+        id:driverDirectionRectangle
+
         anchors.fill: parent
         color:"transparent"
 
@@ -81,13 +80,14 @@ Item {
                                     "width": 100,
                                     "height": 40,
                                     "disableButtonClick": false,
-                                    "size" : 18
+                                    "size" : 18,
+                                    "radius:" :1.0
                                 })
                                 if (button === null) {
                                     console.log("Error creating button")
                                 }else{
                                     button.buttonClicked.connect(function(){
-                                        aliasitem.viewLine= button.buttonText;
+                                        dataPoints.selectviewLine(text);
                                         stack.push("qrc:/StationSelect.qml");
                                     }
                                         )

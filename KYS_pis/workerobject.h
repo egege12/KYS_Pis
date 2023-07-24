@@ -23,11 +23,15 @@ private:
     //Old containers
     double GPSLatitude;
     double GPSLongtitude;
+
+    //Application Methods
+
+    void beginSpecificStation(QString stationID);
 public:
     explicit workerObject(QObject *parent = nullptr, endPointsClass *endPoints = nullptr);
     ~workerObject();
-
-
+    double calculateDistance(double lat1, double lon1, double lat2, double lon2);
+    void mainPIS();
 
 
     //Helpers
@@ -72,6 +76,8 @@ public slots:
     void rwComApp();
     void cycleCall();
     void updateList();
+    void handleLineSelection();
+    void confirmLineSelection();
 
 signals:
     void doneUpdate(bool updateStations);

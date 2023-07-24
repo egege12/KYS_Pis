@@ -38,10 +38,11 @@ class endPointsClass: public QObject{
     Q_PROPERTY(QString actualLongitude READ actualLongitude WRITE setactualLongitude NOTIFY actualLongitudeChanged)
     Q_PROPERTY(QString actualLatitude READ actualLatitude WRITE setactualLatitude NOTIFY actualLatitudeChanged)
     Q_PROPERTY(QString currentSpecialAnounce READ currentSpecialAnounce WRITE setCurrentSpecialAnounce NOTIFY currentSpecialAnounceChanged)
+    Q_PROPERTY(unsigned currentStationOrder READ currentStationOrder WRITE setCurrentStationOrder NOTIFY currentStationOrderChanged)
     Q_PROPERTY(bool stateSpecialAnounceActive READ stateSpecialAnounceActive WRITE setStateSpecialAnounceActive NOTIFY stateSpecialAnounceActiveChanged)
     Q_PROPERTY(bool stateRegularAnounceActive READ stateRegularAnounceActive WRITE setStateRegularAnounceActive NOTIFY stateRegularAnounceActiveChanged)
-
-
+    Q_PROPERTY(QString stationConfirmed READ stationConfirmed WRITE setStationConfirmed NOTIFY StationConfirmedChanged)
+    Q_PROPERTY(QString confirmStationID READ confirmStationID WRITE setConfirmStationID NOTIFY confirmStationIDChanged)
 public:
     struct IIData{
         unsigned VehicleID;
@@ -70,10 +71,15 @@ public:
     IIData iiCom;
     IOData ioCom;
     struct station;
-
+    /*Application definitions*/
+    QString viewLine;
+    QString selectedLine;
+    /*Application definitions*/
     QList<QString> errList{0};
     QMap<QString,QList<station*>> allLineStations;
     QList<station> currentLineStations;
+    QList<QString> currentViewFive;
+
     explicit endPointsClass(QObject *parent = nullptr);
     ~endPointsClass();
 
@@ -137,7 +143,6 @@ public:
 
     void addItemStations(QString ID, QString dir, QList<station *> );
 
-    void selectLine(QString ID,QString dir,QList<station*>);
 
     QString actualLongitude() const;
     void setactualLongitude(const QString &newactualLongitude);
@@ -147,6 +152,17 @@ public:
 
     bool comAppOK() const;
     void setComAppOK(bool newComAppOK);
+
+    unsigned int currentStationOrder() const;
+    void setCurrentStationOrder(unsigned int newcurrentStationOrder);
+
+    /*Confimation*/
+
+    QString stationConfirmed() const;
+    void setStationConfirmed(const QString &newStationConfirmed);
+
+    QString confirmStationID() const;
+    void setConfirmStationID(const QString &newConfirmStationID);
 
 signals:
     void stateNoFolderFoundChanged();
@@ -195,10 +211,30 @@ signals:
 
     void updateSuccesfull();
     void updateFailed();
+
+    /*application Signals*/
+    void anounceCurrentStation();
+    void anonuceNextStation();
+    void updateViewFive();
+    void confirmPopup();
+
+
+    void currentStationOrderChanged();
+
+    void StationConfirmedChanged();
+
+    void confirmStationIDChanged();
+
 public slots:
     /*Application functions*/
     QList<QString> getLineList();
-    QList<QString> getStations(QString lineID);
+    QList<QString> getStations();
+    void selectviewLine(QString lineID);
+    void selectLine();
+    void getConfirmationCurrentStation(QString currentStationName);
+    QString getOffsetStation(QString currentStationID,int offset);
+    void confirmStationSelection(QString currentStationID);
+    QString getStationName(QString stationID);
     /*Application functions*/
 private:
     bool m_stateNoFolderFound;
@@ -222,6 +258,9 @@ private:
     QString m_actualLongitude;
     QString m_actualLatitude;
     bool m_comAppOK;
+    unsigned int m_currentStationOrder;
+    QString m_stationConfirmed;
+    QString m_confirmStationID;
 };
 struct  endPointsClass::station{
     QString id;
@@ -229,6 +268,9 @@ struct  endPointsClass::station{
     QString latitude;
     QString longitude;
     QString soundOK;
+    bool operator==(const station& other) const {
+        return this->id == other.id;
+    }
 };
 
 
@@ -274,6 +316,7 @@ inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
      m_actualLongitude="null";
      m_actualLatitude="null";
      m_comAppOK=false;
+     viewLine="null";
 }
 
 inline endPointsClass::~endPointsClass()
@@ -296,14 +339,67 @@ inline QList<QString> endPointsClass::getLineList()
     return lines;
 }
 
-inline QList<QString> endPointsClass::getStations(QString lineID)
+inline QList<QString> endPointsClass::getStations()
 {
     QList<QString> stations;
-    if(allLineStations.contains(lineID))
-    for(station*  stationsLine : allLineStations.value(lineID)){
+    if(allLineStations.contains(this->viewLine))
+    for(station*  stationsLine : allLineStations.value(viewLine)){
         stations.append(stationsLine->name);
     }
     return stations;
+}
+
+inline void endPointsClass::selectviewLine(QString lineID)
+{
+    this->viewLine = lineID;
+}
+
+inline void endPointsClass::selectLine()
+{
+    this->selectedLine = this->viewLine;
+    currentLineStations.clear();
+    for(station * obj  : allLineStations.value( this->selectedLine)){
+        currentLineStations.append(*obj);
+    }
+    setLineSelected(true);
+}
+
+inline void endPointsClass::getConfirmationCurrentStation(QString currentStationID)
+{
+    setConfirmStationID(currentStationID);
+    emit confirmPopup();
+}
+
+inline QString endPointsClass::getOffsetStation(QString currentStationID, int offset)
+{
+    int index=0;
+        for(station* Obj : this->allLineStations.value(this->selectedLine)){
+            if(Obj->id ==currentStationID){
+                index = this->allLineStations.value(this->selectedLine).indexOf(Obj);
+            }
+        }
+        if((index + offset < this->allLineStations.value(this->selectedLine).size())&&(index + offset > 0)){
+            return this->allLineStations.value(this->selectedLine).at(index+offset)->id;
+        }else{
+            return currentStationID;
+        }
+}
+
+inline void endPointsClass::confirmStationSelection(QString currentStationID)
+{
+        this->setStationConfirmed(currentStationID);
+}
+
+inline QString endPointsClass::getStationName(QString stationID)
+{
+    for(const QList<station*> Obj1 : this->allLineStations){
+        for(station* Obj2 : Obj1){
+            if(Obj2->id ==stationID){
+                return Obj2->name;
+            }
+        }
+    }
+    return stationID;
 }
 
 
@@ -566,11 +662,6 @@ inline void endPointsClass::addItemStations(QString ID, QString dir, QList<stati
     }
 }
 
-inline void endPointsClass::selectLine(QString ID, QString dir, QList<station*>)
-{
-
-}
-
 inline QString endPointsClass::actualLongitude() const
 {
     return m_actualLongitude;
@@ -609,4 +700,47 @@ inline void endPointsClass::setComAppOK(bool newComAppOK)
     m_comAppOK = newComAppOK;
     emit comAppOKChanged();
 }
+
+
+inline unsigned int endPointsClass::currentStationOrder() const
+{
+    return m_currentStationOrder;
+}
+
+inline void endPointsClass::setCurrentStationOrder(unsigned int newcurrentStationOrder)
+{
+    if (m_currentStationOrder == newcurrentStationOrder)
+        return;
+    m_currentStationOrder = newcurrentStationOrder;
+    emit currentStationOrderChanged();
+}
+
+inline QString endPointsClass::stationConfirmed() const
+{
+    return m_stationConfirmed;
+}
+
+inline void endPointsClass::setStationConfirmed(const QString &newStationConfirmed)
+{
+    if (m_stationConfirmed == newStationConfirmed)
+        return;
+    m_stationConfirmed = newStationConfirmed;
+    emit StationConfirmedChanged();
+}
+
+
+inline QString endPointsClass::confirmStationID() const
+{
+    return m_confirmStationID;
+}
+
+inline void endPointsClass::setConfirmStationID(const QString &newConfirmStationID)
+{
+    if (m_confirmStationID == newConfirmStationID)
+        return;
+    m_confirmStationID = newConfirmStationID;
+    emit confirmStationIDChanged();
+}
+
+
 #endif // ENDPOINTSCLASS_H

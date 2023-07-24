@@ -25,6 +25,19 @@ import QtQuick.Controls 2.15
                 }
             }
         }
+        Popup{
+            id:popupWindow
+            spacing :5
+            closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+            focus: true
+            modal:true
+            anchors.centerIn: parent
+
+            PopupWindow{
+                id:windowElement
+                onButtonClicked:popupWindow.close();
+            }
+        }
         Item{
             anchors.right:parent.right
             anchors.top:parent.top
@@ -45,6 +58,13 @@ import QtQuick.Controls 2.15
                 onButtonClicked:{
                     stack.push("driverDirectionSelection.qml");
                 }
+            }
+        }
+        Connections{
+            target:dataPoints
+            onConfirmPopup: {
+                popupWindow.open();
+                windowElement.textMessage = dataPoints.getStationName(dataPoints.confirmStationID())+" istasyonundan mı başlamak istersiniz?"
             }
         }
     }

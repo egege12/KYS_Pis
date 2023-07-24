@@ -192,7 +192,7 @@ Window {
             anchors.left:parent.left
             anchors.bottom:parent.bottom
             width: parent.width
-            height: topBanner.height /2
+            height: topBanner.height
             color: "transparent"
             z:1
             Image{
@@ -201,31 +201,61 @@ Window {
                 source:"/img/backgroundHalfOpacity.png"
                 mipmap:true
             }
-
-            Text{
-                id:currentDirectionNo
-                anchors.left:parent.left
-                anchors.leftMargin:5
-                anchors.verticalCenter: parent.verticalCenter
-                text:"HAT NO. : "+currentDirectionNumber
-                font.pixelSize: 18
-                elide: Text.ElideLeft
-                antialiasing: true
-                font.hintingPreference: Font.PreferNoHinting
-                style: Text.Normal
-                focus: false
-                font.weight: Font.Bold
-                font.family: "Verdana"
-                color: "white"
-                function update(newNumber){
-                    currentDirectionNo.text = "HAT NO. : "+newNumber;
+            Rectangle{
+                id: directionnoRectangle
+                anchors.left: parent.left
+                anchors.bottom:parent.bottom
+                anchors.top:parent.top
+                width:150
+                color:"transparent"
+                Text{
+                    id:currentDirectionNoHeader
+                    anchors.top:parent.top
+                    anchors.left:parent.left
+                    anchors.topMargin:5
+                    anchors.leftMargin:5
+                    text:"Aktif Hat:"
+                    font.pixelSize: 18
+                    elide: Text.ElideLeft
+                    antialiasing: true
+                    font.hintingPreference: Font.PreferNoHinting
+                    style: Text.Normal
+                    focus: false
+                    font.weight: Font.Bold
+                    font.family: "Verdana"
+                    color: "white"
+                    function update(newNumber){
+                        currentDirectionNo.text = newNumber;
+                    }
+                }
+                Text{
+                    id:currentDirectionNo
+                    anchors.top:currentDirectionNoHeader.bottom
+                    anchors.topMargin:15
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text:currentDirectionNumber
+                    font.pixelSize: 18
+                    elide: Text.ElideLeft
+                    antialiasing: true
+                    font.hintingPreference: Font.PreferNoHinting
+                    style: Text.Normal
+                    focus: false
+                    font.weight: Font.Bold
+                    font.family: "Verdana"
+                    color: "white"
+                    function update(newNumber){
+                        currentDirectionNo.text = newNumber;
+                    }
                 }
             }
+
+
             Text{
                 id:currentStationText
-                anchors.left:currentDirectionNo.right
-                anchors.leftMargin:20
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.left:directionnoRectangle.right
+                anchors.leftMargin:10
+                anchors.top:parent.top
+                anchors.topMargin:10
                 text:"ŞİMDİKİ DURAK : "+ currentStationName
                 font.pixelSize: 18
                 elide: Text.ElideLeft
@@ -242,9 +272,10 @@ Window {
             }
             Text{
                 id:nextStationText
-                anchors.left:currentStationText.right
-                anchors.leftMargin:20
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.left:directionnoRectangle.right
+                anchors.leftMargin:10
+                anchors.top:currentStationText.bottom
+                anchors.topMargin:10
                 text:"GELECEK DURAK : "+ nextStationName
                 font.pixelSize: 18
                 elide: Text.ElideLeft
@@ -256,15 +287,10 @@ Window {
                 font.family: "Verdana"
                 color: "white"
                 function update(newStation){
-                    nextStationText.text = "ŞİMDİKİ DURAK : "+newStation;
+                    nextStationText.text = "GELECEK DURAK : "+newStation;
                 }
             }
-
-
-
-
         }
-
     }
     Timer {
         id: timeTimer
@@ -282,5 +308,24 @@ Window {
         triggeredOnStart: true
         onTriggered: dateText.set()
     }
+    Connections{
+        target:dataPoints
+        onCurrentStationChanged:{
+            currentStationText.update(dataPoints.getStationName(dataPoints.currentStation))
+        }
+    }
+    Connections{
+        target:dataPoints
+        onNextStationChanged:{
+            nextStationText.update(dataPoints.getStationName(dataPoints.nextStation))
+        }
+    }
+    Connections{
+        target:dataPoints
+        onCurrentLineChanged:{
+            currentDirectionNo.update(dataPoints.currentLine)
+        }
+    }
+
 }
 

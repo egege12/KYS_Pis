@@ -15,11 +15,15 @@
 #include <QJsonArray>
 #include <QEventLoop>
 #include <iterator>
+#include <QtMath>
 #define COM_INTERVAL 1000
 #define CYCLETIMER_INTERVAL 500
 #define LOG_SAVE_COUNTER 10
 #define MIN_LOG_DEL_SIZE 104857600
 #define MAX_LOG_SIZE 1073741824
+
+
+
 
 
 workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
@@ -531,6 +535,8 @@ void workerObject::startObject()
 
 
     QObject::connect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::updateList,Qt::AutoConnection);
+    QObject::connect(this->endPoints,&endPointsClass::lineSelectedChanged,this,&workerObject::handleLineSelection,Qt::AutoConnection);
+    QObject::connect(this->endPoints,&endPointsClass::StationConfirmedChanged,this,&workerObject::confirmLineSelection,Qt::AutoConnection);
     readStations();
 }
 
@@ -711,7 +717,7 @@ bool workerObject::readJSON(bool useBackup)
            QString ID = existingLineObj["lineId"].toString();
 
 
-           if(!existingLineObj["direction1"].isArray() && existingLineObj["direction1"].isNull()){
+           if(!existingLineObj["direction1"].isArray() || existingLineObj["direction1"].isNull()){
                qDebug()<<"direction1 array değil";
            }else{
                QJsonArray direction1 = existingLineObj["direction1"].toArray();
@@ -733,7 +739,9 @@ bool workerObject::readJSON(bool useBackup)
                }
 
                 if(listStations.size() == direction1.size()){
-                     endPoints->addItemStations(ID,"1",listStations);
+                   if(listStations.size()>0){
+                       endPoints->addItemStations(ID,"1",listStations);
+                   }
                 }else{
                      qDebug()<<"-readJSON-"<<ID<<"hat numarası yön 1 verisi eksik okundu. ";
                      endPoints->setErrCode("-readJSON-"+ID+"hat numarası yön 1 verisi eksik okundu. ");
@@ -741,7 +749,7 @@ bool workerObject::readJSON(bool useBackup)
                 }
            }
 
-           if(!existingLineObj["direction2"].isArray() && existingLineObj["direction2"].isNull() ){
+           if(!existingLineObj["direction2"].isArray() || existingLineObj["direction2"].isNull() ){
                qDebug()<<"direction2 array değil";
            }else{
                QJsonArray direction2 = existingLineObj["direction2"].toArray();
@@ -762,7 +770,9 @@ bool workerObject::readJSON(bool useBackup)
                }
             }
            if(listStations.size() == direction2.size()){
+               if(listStations.size()>0){
                 endPoints->addItemStations(ID,"2",listStations);
+               }
            }else{
                 qDebug()<<"-readJSON-"<<ID<<"hat numarası yön 2 verisi eksik okundu. ";
                 endPoints->setErrCode("-readJSON-"+ID+"hat numarası yön 2 verisi eksik okundu. ");
@@ -1032,8 +1042,10 @@ void workerObject::cycleCall()
     // Setters
 
     if(this->endPoints->errList.size()>LOG_SAVE_COUNTER){
-    saveLogs();
+        saveLogs();
     }
+
+    this->endPoints->setStateNoGpsInfo(!checkGPS());
 
     //Cycle operation check
     if(cycleCheckRead){
@@ -1106,4 +1118,80 @@ void workerObject::updateList()
         this->endPoints->setDataImported(updateComplete);
     }
 
+}
+void workerObject::beginSpecificStation(QString stationID)
+{
+    QString currentStationID,nextStationID = "";
+    bool foundFlag = false;
+    unsigned int index =0;
+    for(endPointsClass::station Obj : this->endPoints->currentLineStations){
+        if((foundFlag) && (nextStationID=="")){
+            nextStationID=Obj.id;
+            break;
+        }else{
+            if(Obj.id == stationID){
+                currentStationID = Obj.id;
+                index = this->endPoints->currentLineStations.indexOf(Obj);
+                foundFlag = true;
+            }
+        }
+    }
+    this->endPoints->setCurrentStation(currentStationID);
+    this->endPoints->setNextStation(nextStationID);
+    endPoints->setCurrentStationOrder(index);
+}
+double workerObject::calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371000; // Earth radius
+    lat1 = qDegreesToRadians(lat1);
+    lon1 = qDegreesToRadians(lon1);
+    lat2 = qDegreesToRadians(lat2);
+    lon2 = qDegreesToRadians(lon2);
+
+    double dLat = lat2 - lat1;
+    double dLon = lon2 - lon1;
+
+    double a = qSin(dLat / 2) * qSin(dLat / 2) +
+               qCos(lat1) * qCos(lat2) *
+                   qSin(dLon / 2) * qSin(dLon / 2);
+    double c = 2 * qAtan2(qSqrt(a), qSqrt(1 - a));
+
+    double distance = qAbs(earthRadius * c);
+    return distance;
+}
+void workerObject::handleLineSelection()
+{
+    qDebug()<<"handlelineselection";
+    if(this->endPoints->lineSelected()){
+        if(this->endPoints->stateNoGpsInfo()){
+            this->endPoints->currentViewFive.clear();
+            for(unsigned i=0;i<this->endPoints->currentLineStations.size() ;++i ){
+                if(i<5){
+                    this->endPoints->currentViewFive.append(this->endPoints->currentLineStations.at(i).name);
+                }else{
+                    break;
+                }
+            }
+            beginSpecificStation(this->endPoints->currentLineStations.at(0).id);
+            this->endPoints->setLineSelected(false);
+            this->endPoints->setCurrentLine(this->endPoints->selectedLine.replace("_","->"));
+        }else{
+            double minDistance = 0.0;
+            endPointsClass::station searchItem;
+            for (const endPointsClass::station Obj : this->endPoints->currentLineStations) {
+                double currentDistance=0.0;
+                if(minDistance > (currentDistance = calculateDistance(Obj.latitude.toDouble(),Obj.longitude.toDouble(),this->endPoints->actualLatitude().toDouble(),this->endPoints->actualLongitude().toDouble()))){
+                    minDistance = currentDistance;
+                    searchItem = Obj;
+                }
+            }
+            this->endPoints->getConfirmationCurrentStation(searchItem.id);
+        }
+    }
+}
+
+void workerObject::confirmLineSelection()
+{
+    beginSpecificStation(this->endPoints->stationConfirmed());
+    this->endPoints->setLineSelected(false);
+    this->endPoints->setCurrentLine(this->endPoints->selectedLine.replace("_","->"));
 }
