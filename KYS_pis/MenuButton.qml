@@ -8,7 +8,7 @@ Rectangle {
     signal buttonExited()
     property string buttonImageSource: ""
     property bool disableButtonClick
-    property real buttonOpacity : 1
+    property real buttonOpacity : 0.6
     property color disabledColor : "#9e9b9b"
     property color pressedColor : "#575757"
     property color releasedColor : "#707070"
@@ -17,7 +17,7 @@ Rectangle {
     property string buttonText: ""
     property real size : 12
     height: width
-    radius: width/8
+    radius: 1
     opacity : buttonRectangle.buttonOpacity
     onDisableButtonClickChanged: disableButtonClick ? disabledColor : releasedColor
     color :disableButtonClick ? disabledColor : releasedColor
@@ -32,7 +32,7 @@ Rectangle {
         fillMode:Image.PreserveAspectFit
     }
     Text{
-
+        id:text
         anchors.top: buttonImageSource!=""? (image.bottom) : parent.top
         anchors.topMargin:5
         anchors.horizontalCenter: parent.horizontalCenter

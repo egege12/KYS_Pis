@@ -71,6 +71,7 @@ public:
     IIData iiCom;
     IOData ioCom;
     struct station;
+    struct videos;
     /*Application definitions*/
     QString viewLine;
     QString selectedLine;
@@ -78,7 +79,8 @@ public:
     QList<QString> errList{0};
     QMap<QString,QList<station*>> allLineStations;
     QList<station> currentLineStations;
-    QList<QString> currentViewFive;
+    QList<QString> currentViewFour;
+    QList<videos> videoList;
 
     explicit endPointsClass(QObject *parent = nullptr);
     ~endPointsClass();
@@ -214,16 +216,22 @@ signals:
 
     /*application Signals*/
     void anounceCurrentStation();
-    void anonuceNextStation();
-    void updateViewFive();
-    void confirmPopup();
 
+    void anonuceNextStation();
+
+    void updateViewFour();
+
+    void confirmPopup();
 
     void currentStationOrderChanged();
 
     void StationConfirmedChanged();
 
     void confirmStationIDChanged();
+
+    void confirmationIDChanged();
+
+    void videoFolderUpdated();
 
 public slots:
     /*Application functions*/
@@ -234,7 +242,14 @@ public slots:
     void getConfirmationCurrentStation(QString currentStationName);
     QString getOffsetStation(QString currentStationID,int offset);
     void confirmStationSelection(QString currentStationID);
+    void increaseConfirmationStation();
+    void deacreaseConfirmationStation();
     QString getStationName(QString stationID);
+
+    /*Video*/
+    void logVideoPlay(QString mediaId);
+
+
     /*Application functions*/
 private:
     bool m_stateNoFolderFound;
@@ -268,9 +283,14 @@ struct  endPointsClass::station{
     QString latitude;
     QString longitude;
     QString soundOK;
+    QString passed;
     bool operator==(const station& other) const {
         return this->id == other.id;
     }
+};
+struct  endPointsClass::videos{
+    QString id;
+    QString description;
 };
 
 
@@ -354,7 +374,7 @@ inline void endPointsClass::selectviewLine(QString lineID)
     this->viewLine = lineID;
 }
 
-inline void endPointsClass::selectLine()
+inline void endPointsClass::selectLine()/*Called on button pressed at line page "StationSelect.qml"*/
 {
     this->selectedLine = this->viewLine;
     currentLineStations.clear();
@@ -373,21 +393,53 @@ inline void endPointsClass::getConfirmationCurrentStation(QString currentStation
 inline QString endPointsClass::getOffsetStation(QString currentStationID, int offset)
 {
     int index=0;
-        for(station* Obj : this->allLineStations.value(this->selectedLine)){
-            if(Obj->id ==currentStationID){
-                index = this->allLineStations.value(this->selectedLine).indexOf(Obj);
-            }
+    for(station* Obj : this->allLineStations.value(this->selectedLine)){
+        if(Obj->id ==currentStationID){
+        index = this->allLineStations.value(this->selectedLine).indexOf(Obj);
         }
-        if((index + offset < this->allLineStations.value(this->selectedLine).size())&&(index + offset > 0)){
-            return this->allLineStations.value(this->selectedLine).at(index+offset)->id;
-        }else{
-            return currentStationID;
-        }
+    }
+    if((index + offset < this->allLineStations.value(this->selectedLine).size())&&(index + offset > 0)){
+        return this->allLineStations.value(this->selectedLine).at(index+offset)->id;
+    }else{
+        return currentStationID;
+    }
 }
 
 inline void endPointsClass::confirmStationSelection(QString currentStationID)
 {
         this->setStationConfirmed(currentStationID);
+}
+
+inline void endPointsClass::increaseConfirmationStation()
+{
+    int index=0;
+    if(this->allLineStations.contains(this->selectedLine)){
+        for(station* Obj : this->allLineStations.value(this->selectedLine)){
+            if(Obj->id ==confirmStationID()){
+                index = this->allLineStations.value(this->selectedLine).indexOf(Obj);
+            }
+        }
+        if(index<this->allLineStations.value(this->selectedLine).size()){
+            setConfirmStationID(this->allLineStations.value(this->selectedLine).at(index+1)->id);
+        }
+
+    }
+}
+
+inline void endPointsClass::deacreaseConfirmationStation()
+{
+    int index=0;
+    if(this->allLineStations.contains(this->selectedLine)){
+        for(station* Obj : this->allLineStations.value(this->selectedLine)){
+            if(Obj->id ==confirmStationID()){
+                index = this->allLineStations.value(this->selectedLine).indexOf(Obj);
+            }
+        }
+        if(index >0){
+            setConfirmStationID(this->allLineStations.value(this->selectedLine).at(index-1)->id);
+        }
+
+    }
 }
 
 inline QString endPointsClass::getStationName(QString stationID)
@@ -400,6 +452,16 @@ inline QString endPointsClass::getStationName(QString stationID)
         }
     }
     return stationID;
+}
+
+inline void endPointsClass::logVideoPlay(QString mediaId)
+{
+    for (const videos& video : this->videoList) {
+        if(video.id==mediaId){
+            this->setErrCode(video.description+" isimli medya oynatılıyor");
+        }
+    }
+
 }
 
 

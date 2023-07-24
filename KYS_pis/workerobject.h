@@ -55,7 +55,7 @@ public:
     bool checkFolderSpecialAnouncement();
     bool checkFileLines();
     bool checkFileJson();
-
+    void readVideoFolder();
 
     //If one fails cycle check starts for that
     /*CYCLE OPERATIONS*/void enableCycleCheckUpdate(bool cycleCheckUpdate);

@@ -28,5 +28,7 @@
         <file>backgroundredHalfOpacity.png</file>
         <file>Mainbackground.png</file>
         <file>driverBackground.png</file>
+        <file>minus.png</file>
+        <file>plus.png</file>
     </qresource>
 </RCC>

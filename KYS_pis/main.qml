@@ -141,110 +141,119 @@ Window {
             anchors.bottom:parent.bottom
             color:"transparent"
             Rectangle{
-                            id:highlightedArea
-                            anchors.left: parent.left
-                            anchors.leftMargin:143
-                            anchors.top:parent.top
-                            anchors.topMargin:42
-                            anchors.bottom:parent.bottom
-                            width:parent.width * .4
-                            color:"transparent"
+                     id:highlightedArea
+                     anchors.left: parent.left
+                     anchors.leftMargin:143
+                     anchors.top:parent.top
+                     anchors.topMargin:42
+                     anchors.bottom:parent.bottom
+                     width:parent.width * .4
+                     color:"transparent"
 
 
-                            ListModel{
-                                id: duraklar
-                                ListElement{
-                                    name:"Durak1"
-                                }
-                                ListElement{
-                                    name:"Durak2"
-                                }
-                                ListElement{
-                                    name:"Durak3"
-                                }
-                                ListElement{
-                                    name:"Durak4"
-                                }
+                     ListModel{
+                         id: duraklar
+                         ListElement{
+                             name:"Durak1"
+                         }
+                         ListElement{
+                             name:"Durak2"
+                         }
+                         ListElement{
+                             name:"Durak3"
+                         }
+                         ListElement{
+                             name:"Durak4"
+                         }
 
 
-                            }
+                     }
 
-                            ListView{
-                                id:myListview
-                                anchors.fill: parent
+                     ListView{
+                         id:myListview
+                         anchors.fill: parent
 
-                                model: duraklar
-                                focus:true
-                                spacing:48
-                                delegate:
-                                    Rectangle{
-                                        width:highlightedArea.width
-                                        height:highlightedArea.height / 7
-                                        color:"transparent"
+                         model: duraklar
+                         focus:true
+                         spacing:48
+                         delegate:
+                             Rectangle{
+                                 width:highlightedArea.width
+                                 height:highlightedArea.height / 7
+                                 color:"transparent"
 
-                                        Text{
-                                            text: name
-                                            font.capitalization: Font.AllUppercase
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            elide: Text.ElideNone
-                                            antialiasing: true
-                                            font.hintingPreference: Font.PreferNoHinting
-                                            style: Text.Normal
-                                            focus: false
-                                            font.weight: Font.Bold
-                                            font.pixelSize:(duraklar.get(0/duraklar.count).name === name) ? 72 : 48
-                                            font.family: "Verdana"
-                                            color: (duraklar.get(0).name === name) ? ((root.pulse === true)? "gray":"cyan") : (duraklar.get(0/duraklar.count).name === name)? "gray" : "black"
-                                        }
-
-
-                                    }
+                                 Text{
+                                     text: name
+                                     font.capitalization: Font.AllUppercase
+                                     anchors.verticalCenter: parent.verticalCenter
+                                     elide: Text.ElideNone
+                                     antialiasing: true
+                                     font.hintingPreference: Font.PreferNoHinting
+                                     style: Text.Normal
+                                     focus: false
+                                     font.weight: Font.Bold
+                                     font.pixelSize:(duraklar.get(0/duraklar.count).name === name) ? 72 : 48
+                                     font.family: "Verdana"
+                                     color: (duraklar.get(0).name === name) ? ((root.pulse === true)? "gray":"cyan") : (duraklar.get(0/duraklar.count).name === name)? "gray" : "black"
+                                 }
 
 
-                                populate: Transition{
-                                    NumberAnimation{
-                                        properties:"x,y";
-                                        duration:300
-                                    }
-                                }
-                                add: Transition{
-
-                                    NumberAnimation {
-                                        property:"x";
-                                        from:1500;
-                                        to: 0;
-                                        duration:1000
-                                    }
-                                    NumberAnimation {
-                                        property:"opacity";
-                                        from:0;
-                                        to: 1.0;
-                                        duration:1000
-                                    }
+                             }
 
 
+                         populate: Transition{
+                             NumberAnimation{
+                                 properties:"x,y";
+                                 duration:300
+                             }
+                         }
+                         add: Transition{
 
-                                }
-
-                                remove: Transition{
-
-                                    NumberAnimation {
-                                        property:"x";
-                                        from:0;
-                                        to: -1500;
-                                        duration:1000
-                                    }
-                                    NumberAnimation {
-                                        property:"opacity";
-                                        from:1.0;
-                                        to: 0;
-                                        duration:1000
-                                    }
+                             NumberAnimation {
+                                 property:"x";
+                                 from:1500;
+                                 to: 0;
+                                 duration:1000
+                             }
+                             NumberAnimation {
+                                 property:"opacity";
+                                 from:0;
+                                 to: 1.0;
+                                 duration:1000
+                             }
 
 
-                                }
-                            }
-                        }
+
+                         }
+
+                         remove: Transition{
+
+                             NumberAnimation {
+                                 property:"x";
+                                 from:0;
+                                 to: -1500;
+                                 duration:1000
+                             }
+                             NumberAnimation {
+                                 property:"opacity";
+                                 from:1.0;
+                                 to: 0;
+                                 duration:1000
+                             }
+
+
+                         }
+                     }
+                 }
+        }
+        Connections{
+            target: dataPoints
+            onUpdateViewFour:{
+                duraklar.clear();
+                for (var i = 0; i < 4; i++) {
+                            duraklar.append({"name": dataPoints.currentViewFour[i].toString()});
+                }
+            }
         }
     }
     Rectangle{
@@ -267,8 +276,8 @@ Window {
 
         FolderListModel {
             id: folderModel
-
-            folder: "file:///C:/appKYS_Pis/PISVideolar"
+            folder: "file:///C:/Users/ege-t/Desktop/PISVideos"
+            //folder: "file:///C:/appKYS_Pis/PISVideos"
             nameFilters: ["*.mp4"]
             onStatusChanged: {
                 if(videoArea.mediaIndex > (folderModel.count-1))
@@ -290,10 +299,13 @@ Window {
                     videoArea.mediaIndex=0
                 }
             }
+            onPlaying: {
+                dataPoints.logVideoPlay(folderModel.get(videoArea.mediaIndex,"fileName"));
+            }
 
             onSourceChanged: {
                 player.play();
-                console.log("onsourcechanged");
+
             }
 
 
@@ -313,7 +325,6 @@ Window {
         running: true
         triggeredOnStart: true
         onTriggered: {timeText.set()
-                      root.pulse = ! root.pulse
         }
     }
     Timer {
@@ -336,47 +347,8 @@ Window {
             videoArea.mediaIndex=1
         }
     }
-    property bool pulse : false;
-    property bool currentStation : false;
-    property bool switchOk : true;
-    property int durakCounter: 5;
-    property int stage :2
-    Timer {
-        id: listUpdater
-        interval: 10000
-        repeat: true
-        running: true
-        triggeredOnStart: false
-        onTriggered: {
-            if(root.stage ===1){
 
-                if(root.switchOk){
-                    duraklar.remove(0,1);
-                    root.switchOk = !root.switchOk
-                    listUpdater.interval= 500
 
-                }else{
-                    duraklar.append({"name": "DURAK"+root.durakCounter.toString()})
-                    root.durakCounter ++;
-                    root.switchOk = !root.switchOk
-                    listUpdater.interval= 10000
-                }
-            }
-
-            if(root.switchOk){
-            if(root.currentStation){
-                playerSound.source = "file:///C:/appKYS_Pis/PISduraklar/example.mp3"
-                root.soundEnd = true
-                root.stage=1
-            }else{
-                playerSound.source = "file:///C:/appKYS_Pis/PISduraklar/next_station.mp3"
-                root.soundEnd = false
-                root.stage=2
-            }
-            root.currentStation= !root.currentStation
-            }
-        }
-    }
     property bool soundEnd: false;
     MediaPlayer {
         id: playerSound
@@ -396,5 +368,13 @@ Window {
         }
 
     }
+    Connections{
+        target: dataPoints
+        onVideoFolderUpdated:{
+            folderModel.refresh();
+        }
+    }
+
+
 
 }

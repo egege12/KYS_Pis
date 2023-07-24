@@ -72,8 +72,6 @@ if (reply->error() == QNetworkReply::NoError) {
         return false;
 }
 
-
-
 }
 
 bool workerObject::checkService()
@@ -114,6 +112,7 @@ bool workerObject::checkGPS()
 {
 
     if(!this->endPoints->iiCom.GPSOk){
+        qDebug()<<"GPS STATUS :"<<this->endPoints->iiCom.GPSOk;
         return false;
     }else{
         if(this->endPoints->iiCom.GPSLatitude != this->GPSLatitude){
@@ -219,6 +218,64 @@ bool jsonFileOK = true;
            jsonFileOK = false;
         }
         return jsonFileOK;
+}
+
+void workerObject::readVideoFolder()
+{
+        this->endPoints->videoList.clear();
+        QString csvFilePath ="C:/appKYS_Pis/PISVideos/dataCommercial.csv";
+        QString folderPath  = "C:/appKYS_Pis/PISVideos";
+        QFile csvFile(csvFilePath);
+        if (!csvFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+           qDebug() << "CSV dosyası açılamadı!";
+           return;
+        }
+
+        QTextStream in(&csvFile);
+        bool isFirstLine = true;
+        while (!in.atEnd()) {
+           QString line = in.readLine();
+           if (isFirstLine) {
+               isFirstLine = false;
+               continue; // Başlık satırını pas geç
+           }
+           QStringList data = line.split(",");
+           if (data.size() >= 2) {
+               endPointsClass::videos video;
+               video.id = data[0]+".mp4";
+               video.description = data[1];
+               this->endPoints->videoList.append(video);
+           }
+        }
+        csvFile.close();
+
+        QDir videoFolder(folderPath);
+        QStringList folderVideoNames = videoFolder.entryList(QStringList() << "*.mp4", QDir::Files);
+        for (const QString& videoName : folderVideoNames) {
+           bool found = false;
+           for (const endPointsClass::videos& video : this->endPoints->videoList) {
+               if (video.id == videoName) {
+                    found = true;
+                    break;
+               }
+           }
+
+           if (!found) {
+               qDebug() << "Uyarı: CSV dosyasında olmayan video: " << videoName;
+               this->endPoints->setErrCode("Klasörde olup veritabanında olmayan video: " + videoName);
+           }
+        }
+
+        for (const endPointsClass::videos& video : this->endPoints->videoList) {
+           QString videoFilePath = folderPath + "/" + video.id;
+           if (!videoFolder.exists(video.id)) {
+               qDebug() << "Uyarı: Klasörde olmayan video: " << video.id;
+               this->endPoints->setErrCode("Veritabanında olup klasörde olmayan video: " + video.id);
+           } else {
+               this->endPoints->videoList.append(video);
+           }
+        }
+        emit endPoints->videoFolderUpdated();
 }
 
 void workerObject::enableCycleCheckUpdate(bool cycleCheckUpdate)
@@ -538,6 +595,7 @@ void workerObject::startObject()
     QObject::connect(this->endPoints,&endPointsClass::lineSelectedChanged,this,&workerObject::handleLineSelection,Qt::AutoConnection);
     QObject::connect(this->endPoints,&endPointsClass::StationConfirmedChanged,this,&workerObject::confirmLineSelection,Qt::AutoConnection);
     readStations();
+    readVideoFolder();
 }
 
 void workerObject::stopObject()
@@ -944,7 +1002,7 @@ void workerObject::rwComApp()
                 }
                 if(IIDataObj.contains("GPSOk")){
                     this->endPoints->iiCom.GPSOk = IIDataObj["GPSOk"].toBool();
-                    //qDebug()<<"GPSOk"<<this->endPoints->iiCom.GPSOk ;
+                    qDebug()<<"GPSOk"<<this->endPoints->iiCom.GPSOk ;
                 }else{
                     this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> GPSOk bulunamadı.");
                 }
@@ -1044,8 +1102,12 @@ void workerObject::cycleCall()
     if(this->endPoints->errList.size()>LOG_SAVE_COUNTER){
         saveLogs();
     }
-
+    //Use communication parameters
     this->endPoints->setStateNoGpsInfo(!checkGPS());
+    this->endPoints->setactualLatitude(QString::number(this->endPoints->iiCom.GPSLatitude));
+    this->endPoints->setactualLongitude(QString::number(this->endPoints->iiCom.GPSLongtitude));
+
+
 
     //Cycle operation check
     if(cycleCheckRead){
@@ -1116,7 +1178,9 @@ void workerObject::updateList()
             emit this->endPoints->updateFailed();
         }
         this->endPoints->setDataImported(updateComplete);
+        readVideoFolder();
     }
+
 
 }
 void workerObject::beginSpecificStation(QString stationID)
@@ -1136,6 +1200,12 @@ void workerObject::beginSpecificStation(QString stationID)
             }
         }
     }
+    this->endPoints->currentViewFour.clear();
+        for(unsigned i=index;i<index+4 ;++i ){
+                this->endPoints->currentViewFour.append(this->endPoints->currentLineStations.at(i).name);
+        //qDebug()<<this->endPoints->currentLineStations.at(i).name;
+        }
+    emit endPoints->updateViewFour();
     this->endPoints->setCurrentStation(currentStationID);
     this->endPoints->setNextStation(nextStationID);
     endPoints->setCurrentStationOrder(index);
@@ -1160,30 +1230,25 @@ double workerObject::calculateDistance(double lat1, double lon1, double lat2, do
 }
 void workerObject::handleLineSelection()
 {
-    qDebug()<<"handlelineselection";
+
     if(this->endPoints->lineSelected()){
         if(this->endPoints->stateNoGpsInfo()){
-            this->endPoints->currentViewFive.clear();
-            for(unsigned i=0;i<this->endPoints->currentLineStations.size() ;++i ){
-                if(i<5){
-                    this->endPoints->currentViewFive.append(this->endPoints->currentLineStations.at(i).name);
-                }else{
-                    break;
-                }
-            }
             beginSpecificStation(this->endPoints->currentLineStations.at(0).id);
             this->endPoints->setLineSelected(false);
             this->endPoints->setCurrentLine(this->endPoints->selectedLine.replace("_","->"));
         }else{
-            double minDistance = 0.0;
+            qDebug()<<"handlelineselection - else";
+            double minDistance = std::numeric_limits<double>::max(); // Çok büyük bir başlangıç değeri
             endPointsClass::station searchItem;
+
             for (const endPointsClass::station Obj : this->endPoints->currentLineStations) {
-                double currentDistance=0.0;
-                if(minDistance > (currentDistance = calculateDistance(Obj.latitude.toDouble(),Obj.longitude.toDouble(),this->endPoints->actualLatitude().toDouble(),this->endPoints->actualLongitude().toDouble()))){
+                double currentDistance = calculateDistance(Obj.latitude.toDouble(), Obj.longitude.toDouble(), this->endPoints->actualLatitude().toDouble(), this->endPoints->actualLongitude().toDouble());
+                if (currentDistance < minDistance) {
                     minDistance = currentDistance;
                     searchItem = Obj;
                 }
             }
+            //qDebug()<<"İstasyon ID'si "<<searchItem.id;
             this->endPoints->getConfirmationCurrentStation(searchItem.id);
         }
     }

@@ -27,7 +27,7 @@ Item {
                 anchors.right:parent.right
                 anchors.top:parent.top
                 anchors.bottom:parent.bottom
-                width:50
+                width:80
                 buttonImageSource : "qrc:/img/busDRMicon.png"
                 radius: 1
                 imageRatio: 1

@@ -5,21 +5,23 @@ import QtQuick.Layouts 1.0
 Item {
     id: popupWarning
     property var textMessage;
+    property var stationText;
     signal escapedClicked;
     signal buttonClicked;
+    signal plusClicked;
+    signal minusClicked;
     Frame {
         id: frameWarning
         Rectangle{
             id:rectWarning
-            width: 400
-            height: 200
+            width: 600
+            height: 400
             border.color: "#636363"
             gradient: Gradient {
                 GradientStop {
                     position: 0
                     color: "#fdfbfb"
                 }
-
                 GradientStop {
                     position: 1
                     color: "#ebedee"
@@ -37,76 +39,70 @@ Item {
             }
 
             Text {
-                id: textHeaderWarning
-                x: 116
-                y: 25
-                width: 59
-                height: 23
-                text: qsTr("Uyarı!")
-                anchors.right: parent.right
-                font.pixelSize: 18
-                font.styleName: "Kalın"
+                id: textStation
+                text: popupWarning.stationText
+                width: 250
+                height: 77
+                anchors.top:parent.top
+                anchors.topMargin: 30
+                anchors.horizontalCenter: parent.horizontalCenter
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideLeft
+                font.pixelSize: 32
                 font.family: "Verdana"
-                anchors.rightMargin: 213
+                wrapMode: "WordWrap"
             }
-
-            Image {
-                id: imgWarning
-                x: 21
-                y: 56
-                width: 84
-                height: 87
-                source: "qrc:/img/img/600600.png"
-                autoTransform: true
-                mipmap: false
-                mirror: false
-                smooth: true
-                fillMode: Image.PreserveAspectFit
-            }
-
-
-                Text {
-                    id: textDetailWarning
-                    text: popupWarning.textMessage
-                    x: 116
-                    width: 250
-                    height: 77
-                    elide: Text.ElideLeft
-                    anchors.right: parent.right
-                    anchors.top: textHeaderWarning.bottom
-                    font.pixelSize: 18
-                    font.family: "Verdana"
-                    anchors.topMargin: 6
-                    anchors.rightMargin: 21
-                    wrapMode: "WordWrap"
-                }
-
-
-            DelayButton {
-                id: buttonWarning
-                x: 258
-                y: 132
-                width: 109
-                height: 39
-                text: qsTr("Tamam")
-                font.pixelSize: 16
-                onActivated: popupWarning.buttonClicked();
+            Text {
+                id: textDetailWarning
+                text: popupWarning.textMessage
+                width: 250
+                height: 77
+                anchors.centerIn: parent
+                elide: Text.ElideLeft
+                horizontalAlignment: Text.AlignHCenter
+                font.pixelSize: 22
+                font.family: "Verdana"
+                wrapMode: "WordWrap"
             }
             MenuButton {
-                id : escapePopup
-                width: 35
-                height: 35
-                buttonImageSource : "qrc:/img/img/iconEscapeButton.png"
-                clip: false
-                opacity: 1
-                visible: true
+                id : buttonMinus
+                width: 100
+                height: 100
+                anchors.left: parent.left
+                anchors.leftMargin: 30
+                anchors.verticalCenter: parent.verticalCenter
+                buttonImageSource : "qrc:/img/minus.png"
                 radius: 1
-                anchors.top: parent.top
+                disableButtonClick: false
+                buttonText: "Anonslar"
+                onButtonClicked:{popupWarning.minusClicked()
+                }
+            }
+            MenuButton {
+                id : buttonPlus
+                width: 100
+                height: 100
                 anchors.right: parent.right
-                hoveredColor:"#f00505"
-                pressedColor: "#969595"
-                releasedColor: "#a80303"
-                onButtonClicked: popupWarning.escapedClicked()
+                anchors.rightMargin: 30
+                anchors.verticalCenter: parent.verticalCenter
+                buttonImageSource : "qrc:/img/plus.png"
+                radius: 1
+                disableButtonClick: false
+                buttonText: "Anonslar"
+                onButtonClicked:{popupWarning.plusClicked()
+                }
+            }
+            DelayButton {
+                id: buttonWarning
+                width: 130
+                height: 80
+                anchors.bottom:parent.bottom
+                anchors.bottomMargin: 20
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: qsTr("ONAYLA")
+                font.bold: true
+                font.pixelSize: 20
+                onActivated: popupWarning.buttonClicked();
             }
         }
     }

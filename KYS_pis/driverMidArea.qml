@@ -32,10 +32,19 @@ import QtQuick.Controls 2.15
             focus: true
             modal:true
             anchors.centerIn: parent
-
             PopupWindow{
                 id:windowElement
-                onButtonClicked:popupWindow.close();
+                property string stationID;
+                onButtonClicked:{
+                    dataPoints.confirmStationSelection(windowElement.stationID);
+                    popupWindow.close();
+                }
+                onPlusClicked:{
+                    dataPoints.increaseConfirmationStation();
+                }
+                onMinusClicked:{
+                    dataPoints.deacreaseConfirmationStation();
+                }
             }
         }
         Item{
@@ -63,8 +72,19 @@ import QtQuick.Controls 2.15
         Connections{
             target:dataPoints
             onConfirmPopup: {
-                popupWindow.open();
-                windowElement.textMessage = dataPoints.getStationName(dataPoints.confirmStationID())+" istasyonundan mı başlamak istersiniz?"
+                if(!popupWindow.opened){
+                    popupWindow.open();
+                }
+                windowElement.textMessage = "Yukarıdaki istasyondan mı başlıyorsunuz?"
+                windowElement.stationID = dataPoints.confirmStationID
+                windowElement.stationText = dataPoints.getStationName(windowElement.stationID)
+            }
+        }
+        Connections{
+            target:dataPoints
+            onConfirmStationIDChanged: {
+                windowElement.stationID = dataPoints.confirmStationID
+                windowElement.stationText = dataPoints.getStationName(windowElement.stationID)
             }
         }
     }
