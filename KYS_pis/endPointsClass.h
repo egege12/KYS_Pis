@@ -1,4 +1,4 @@
-//this class is created to use communication between interface and backend
+﻿//this class is created to use communication between interface and backend
 
 #ifndef ENDPOINTSCLASS_H
 #define ENDPOINTSCLASS_H
@@ -9,7 +9,7 @@
 #include <QList>
 #include <QDateTime>
 #include <QMap>
-
+#include <QDir>
 
 
 class endPointsClass: public QObject{
@@ -286,6 +286,8 @@ public slots:
     QString getViewFourMember(unsigned index);
 
     QString getPathAudio(QString stationID);
+
+    QList<QString> getAnounceList(QString path);
     /*Application functions*/
 private:
     bool m_stateNoFolderFound;
@@ -415,6 +417,9 @@ inline void endPointsClass::selectviewLine(QString lineID)
 
 inline void endPointsClass::selectLine()/*Called on button pressed at line page "StationSelect.qml"*/
 {
+    qDebug()<<"selectLine çağırıldı ";
+    setLineSelected(false);
+    this->setSelectionDone(false);
     this->selectedLine = this->viewLine;
     currentLineStations.clear();
     for(station * obj  : allLineStations.value( this->selectedLine)){
@@ -424,7 +429,7 @@ inline void endPointsClass::selectLine()/*Called on button pressed at line page 
 }
 
 inline void endPointsClass::getConfirmationCurrentStation(QString currentStationID)
-{
+{   qDebug()<<"getConfirmationCurrentStation çağırıldı ";
     setConfirmStationID(currentStationID);
     emit confirmPopup();
 }
@@ -458,7 +463,7 @@ inline void endPointsClass::increaseConfirmationStation()
                 index = this->allLineStations.value(this->selectedLine).indexOf(Obj);
             }
         }
-        if(index<this->allLineStations.value(this->selectedLine).size()){
+        if(index+1 < this->allLineStations.value(this->selectedLine).size()){
             setConfirmStationID(this->allLineStations.value(this->selectedLine).at(index+1)->id);
         }
 
@@ -515,7 +520,12 @@ inline void endPointsClass::setVideoAvailable()
 
 inline QString endPointsClass::getViewFourMember(unsigned int index)
 {
-    return this->currentViewFour.at(index);
+    if(index < this->currentViewFour.size()){
+         return this->currentViewFour.at(index);
+    }
+    else{
+         return "";
+    }
 }
 
 inline QString endPointsClass::getPathAudio(QString stationID)
@@ -527,6 +537,23 @@ inline QString endPointsClass::getPathAudio(QString stationID)
         }
     }
     return "";
+}
+
+inline QList<QString> endPointsClass::getAnounceList(QString path)
+{
+    QList<QString> anounceList;
+    QDir directory(path);
+    if (directory.exists()) {
+        QStringList filters;
+        filters << "*.mp3";
+        directory.setNameFilters(filters);
+
+        QStringList fileList = directory.entryList();
+        for (const QString &fileName : fileList) {
+            anounceList.append(fileName);
+        }
+    }
+    return anounceList;
 }
 
 

@@ -12,8 +12,8 @@ Window {
     height: 540
     color: "white"
     Component.onCompleted: {
-        x= Qt.application.screens[1].virtualX;
-        y= Qt.application.screens[1].virtualY;
+        x= Qt.application.screens[0].virtualX;
+        y= Qt.application.screens[0].virtualY;
     }
     flags: Qt.FramelessWindowHint | Qt.Window | Qt.MaximizeUsingFullscreenGeometryHint
     Loader {

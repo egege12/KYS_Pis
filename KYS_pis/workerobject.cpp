@@ -1242,10 +1242,12 @@ void workerObject::beginSpecificStation(QString stationID)
         }
     }
     this->endPoints->currentViewFour.clear();
-        for(unsigned i=index;i<index+4 ;++i ){
+
+        for(unsigned i=index;((i<index+4)&& i<this->endPoints->currentLineStations.size() );++i ){
                 this->endPoints->currentViewFour.append(this->endPoints->currentLineStations.at(i).name);
-        //qDebug()<<this->endPoints->currentLineStations.at(i).name;
+                qDebug()<<this->endPoints->currentLineStations.at(i).name;
         }
+
     emit endPoints->loadViewFour();
     this->endPoints->setCurrentStation(currentStationID);
     this->endPoints->setNextStation(nextStationID);
@@ -1281,9 +1283,9 @@ void workerObject::mainPIS()
             this->endPoints->setStateDispTextOnStationArea(false);
             double currentStationLatitude = this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()).latitude.toDouble();
             double currentStationLongitude = this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()).longitude.toDouble();
-            qDebug()<<"konumları okudum";
+             //qDebug()<<"konumları okudum";
             if(this->inStation){
-                qDebug()<<"istasyondayım";
+                 //qDebug()<<"istasyondayım";
                     if(!busStopped && (DISTANCE_LEAVE_CURRENT_STATION < this->calculateDistance(currentStationLatitude,currentStationLongitude,this->endPoints->actualLatitude().toDouble(),this->endPoints->actualLongitude().toDouble()))){
                     emit this->endPoints->anounceNextStation();
                     inStation = false;
@@ -1297,30 +1299,55 @@ void workerObject::mainPIS()
                     this->endPoints->currentViewFour.pop_front();
                     if(this->endPoints->currentStationOrder()+1<this->endPoints->currentLineStations.size()){
                             this->endPoints->setNextStation(this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()+1).id);
-                            this->endPoints->currentViewFour.append(this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()+3).name);
+                            if(this->endPoints->currentStationOrder()+3<this->endPoints->currentLineStations.size()){
+                                this->endPoints->currentViewFour.append(this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()+3).name);
+                            }
                     }else{
                             this->endPoints->setNextStation("0");
                             this->endPoints->currentViewFour.append("");
                     }
                     emit this->endPoints->updateViewFour();
-                    qDebug()<<"duraktan ayrılış";
+                     //qDebug()<<"duraktan ayrılış";
                 }
             }else{
-                qDebug()<<"istasyonda değilim";
+                 //qDebug()<<"istasyonda değilim";
                     if(DISTANCE_APRROACH_CURRENT_STATION > this->calculateDistance(currentStationLatitude,currentStationLongitude,this->endPoints->actualLatitude().toDouble(),this->endPoints->actualLongitude().toDouble())){
-                    if(busStopped && waitToStop){
-                            emit this->endPoints->anounceCurrentStation();
-                            qDebug()<<"ikinci anonsu istedim";
-                            inStation = true;
-                            waitToStop= false;
-                    }else if(!waitToStop){
-                            emit this->endPoints->anounceCurrentStation();
-                            waitToStop=true;
-                            qDebug()<<"ilk anonsu istedim";
-                    }else{
-                        qDebug()<<"boştayım";
+                        if(busStopped && waitToStop){
+                                emit this->endPoints->anounceCurrentStation();
+                                 //qDebug()<<"ikinci anonsu istedim";
+                                inStation = true;
+                                waitToStop= false;
+                        }else if(!waitToStop){
+                                emit this->endPoints->anounceCurrentStation();
+                                waitToStop=true;
+                                 //qDebug()<<"ilk anonsu istedim";
+                        }else{
+                             //qDebug()<<"boştayım";
+                        }
+                    }else if (waitToStop && DISTANCE_LEAVE_CURRENT_STATION < this->calculateDistance(currentStationLatitude,currentStationLongitude,this->endPoints->actualLatitude().toDouble(),this->endPoints->actualLongitude().toDouble())){
+                        waitToStop = false;
+                        emit this->endPoints->anounceNextStation();
+                        inStation = false;
+                        this->endPoints->currentLineStations[this->endPoints->currentStationOrder()].passed = true;
+                        if(this->endPoints->currentStationOrder()+1<this->endPoints->currentLineStations.size()){
+                            this->endPoints->setCurrentStationOrder(this->endPoints->currentStationOrder()+1);
+                        }else{
+                            this->endPoints->setCurrentStationOrder(this->endPoints->currentStationOrder());
+                        }
+                        this->endPoints->setCurrentStation(this->endPoints->nextStation());
+                        this->endPoints->currentViewFour.pop_front();
+                        if(this->endPoints->currentStationOrder()+1<this->endPoints->currentLineStations.size()){
+                            this->endPoints->setNextStation(this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()+1).id);
+                            if(this->endPoints->currentStationOrder()+3<this->endPoints->currentLineStations.size()){
+                                this->endPoints->currentViewFour.append(this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()+3).name);
+                            }
+                        }else{
+                            this->endPoints->setNextStation("0");
+                            this->endPoints->currentViewFour.append("");
+                        }
+                        emit this->endPoints->updateViewFour();
+                         //qDebug()<<"pas geçiyorum";
                     }
-                }
             }
         }
     }else{
@@ -1330,8 +1357,8 @@ void workerObject::mainPIS()
 }
 void workerObject::handleLineSelection()
 {
-
     if(this->endPoints->lineSelected()){
+            qDebug()<<"handleLineSelection çağırıldı lineselected false";
         if(this->endPoints->stateNoGpsInfo()){
             beginSpecificStation(this->endPoints->currentLineStations.at(0).id);
             this->endPoints->setLineSelected(false);

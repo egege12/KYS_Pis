@@ -7,8 +7,8 @@ Window {
     height: 600
     color: "white"
     Component.onCompleted: {
-        x= Qt.application.screens[0].virtualX;
-        y= Qt.application.screens[0].virtualY;
+        x= Qt.application.screens[1].virtualX;
+        y= Qt.application.screens[1].virtualY;
     }
     flags: Qt.FramelessWindowHint | Qt.Window | Qt.MaximizeUsingFullscreenGeometryHint
 
@@ -308,6 +308,47 @@ Window {
         triggeredOnStart: true
         onTriggered: dateText.set()
     }
+    Popup{
+        id:popupWindow
+        spacing :5
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+        focus: true
+        modal:true
+        anchors.centerIn: parent
+        PopupWindow{
+            id:windowElement
+            property string stationID;
+            onButtonClicked:{
+                dataPoints.confirmStationSelection(windowElement.stationID);
+                popupWindow.close();
+            }
+            onPlusClicked:{
+                dataPoints.increaseConfirmationStation();
+            }
+            onMinusClicked:{
+                dataPoints.deacreaseConfirmationStation();
+            }
+        }
+    }
+    Connections{
+        target:dataPoints
+        onConfirmPopup: {
+            if(!popupWindow.opened){
+                console.log("onConfirmPopup çağırıldı ");
+                popupWindow.open();
+            }
+            windowElement.textMessage = "Yukarıdaki istasyondan mı başlıyorsunuz?"
+            windowElement.stationID = dataPoints.confirmStationID
+            windowElement.stationText = dataPoints.getStationName(windowElement.stationID)
+        }
+    }
+    Connections{
+        target:dataPoints
+        onConfirmStationIDChanged: {
+            windowElement.stationID = dataPoints.confirmStationID
+            windowElement.stationText = dataPoints.getStationName(windowElement.stationID)
+        }
+    }
     Connections{
         target:dataPoints
         onCurrentStationChanged:{
@@ -326,6 +367,7 @@ Window {
             currentDirectionNo.update(dataPoints.currentLine)
         }
     }
+
 
 }
 
