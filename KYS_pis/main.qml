@@ -71,7 +71,7 @@ Window {
             }
             Text {
                 id: dateText
-                font.pixelSize: 28
+                font.pixelSize: 24
                 text: new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \n        dddd")
                 anchors.top: timeText.bottom
                 anchors.topMargin: 50
@@ -147,7 +147,7 @@ Window {
                      anchors.top:parent.top
                      anchors.topMargin:42
                      anchors.bottom:parent.bottom
-                     width:parent.width * .4
+                     width:parent.width * .6
                      color:"transparent"
 
 
@@ -166,7 +166,6 @@ Window {
                              name:"Durak4"
                          }
 
-
                      }
 
                      ListView{
@@ -179,23 +178,25 @@ Window {
                          delegate:
                              Rectangle{
                                  width:highlightedArea.width
-                                 height:highlightedArea.height / 7
+                                 height:highlightedArea.height / 6
                                  color:"transparent"
 
-                                 Text{
-                                     text: name
-                                     font.capitalization: Font.AllUppercase
-                                     anchors.verticalCenter: parent.verticalCenter
-                                     elide: Text.ElideNone
-                                     antialiasing: true
-                                     font.hintingPreference: Font.PreferNoHinting
-                                     style: Text.Normal
-                                     focus: false
-                                     font.weight: Font.Bold
-                                     font.pixelSize:(duraklar.get(0/duraklar.count).name === name) ? 72 : 48
-                                     font.family: "Verdana"
-                                     color: (duraklar.get(0).name === name) ? ((root.pulse === true)? "gray":"cyan") : (duraklar.get(0/duraklar.count).name === name)? "gray" : "black"
-                                 }
+                                 Text {
+                                             text: name
+                                             font.capitalization: Font.AllUppercase
+                                             anchors.fill: parent
+                                             elide: Text.ElideNone
+                                             antialiasing: true
+                                             font.hintingPreference: Font.PreferNoHinting
+                                             verticalAlignment: Text.AlignTop
+                                             style: Text.Normal
+                                             font.weight: Font.Bold
+                                             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                                             maximumLineCount: 2
+                                             font.pixelSize: Math.min(32, ((parent.width / name.length) * 2.5))
+                                             font.family: "Verdana"
+                                             color: (duraklar.get(0).name === name) ? ((root.pulse === true) ? "gray" : "cyan") : (duraklar.get(0).name === name) ? "gray" : "black"
+                                         }
 
 
                              }
@@ -246,15 +247,7 @@ Window {
                      }
                  }
         }
-        Connections{
-            target: dataPoints
-            onUpdateViewFour:{
-                duraklar.clear();
-                for (var i = 0; i < 4; i++) {
-                            duraklar.append({"name": dataPoints.currentViewFour[i].toString()});
-                }
-            }
-        }
+
     }
     Rectangle{
         id:blackArea
@@ -273,15 +266,32 @@ Window {
         height: parent.height
         color : "black"
         property int mediaIndex
-
+        Image {
+            id: screenSaverRight
+            width: parent.width
+            height: parent.height
+            anchors.centerIn: parent
+            horizontalAlignment: Text.AlignHCenter
+            source:"qrc:/img/nicetrip_1.png"
+            fillMode: Image.PreserveAspectFit
+            visible:false
+            z:3
+        }
         FolderListModel {
             id: folderModel
-            folder: "file:///C:/Users/ege-t/Desktop/PISVideos"
-            //folder: "file:///C:/appKYS_Pis/PISVideos"
+            folder: "file:///C:/appKYS_Pis/PISVideos"
             nameFilters: ["*.mp4"]
             onStatusChanged: {
                 if(videoArea.mediaIndex > (folderModel.count-1))
                     videoArea.mediaIndex=0
+            }
+            function update(){
+                folderModel.folder = "";
+                folderModel.reload();
+            }
+            function reload(){
+                folderModel.folder = "file:///C:/appKYS_Pis/PISVideos";
+                videoStarter.start();
             }
         }
 
@@ -290,6 +300,7 @@ Window {
             muted: true
             onStatusChanged: {
                 if (player.status == MediaPlayer.EndOfMedia) {
+                    dataPoints.setVideoAvailable();
                     player.source = folderModel.get(videoArea.mediaIndex,"filePath")
                     if(videoArea.mediaIndex < (folderModel.count-1))
                         videoArea.mediaIndex++
@@ -298,7 +309,46 @@ Window {
                 }else if(player.mediaStatus === MediaPlayer.InvalidMedia || player.mediaStatus === MediaPlayer.NoMedia ){
                     videoArea.mediaIndex=0
                 }
+
             }
+            function check(){
+                if(player.status === MediaPlayer.NoMedia){
+                    dataPoints.setVideoUnavailable();
+                    folderModel.update();
+                }else{
+                    dataPoints.setVideoAvailable();
+                }
+                switch (player.status) {
+                    case MediaPlayer.NoMedia:
+                        //console.log("NoMedia");
+                        break;
+                    case MediaPlayer.Loading:
+                        //console.log("Loading");
+                        break;
+                    case MediaPlayer.Loaded:
+                        //console.log("Loaded");
+                        break;
+                    case MediaPlayer.Buffering:
+                        //console.log("Buffering");
+                        break;
+                    case MediaPlayer.Stalled:
+                        //console.log("Stalled");
+                        break;
+                    case MediaPlayer.Buffered:
+                        //console.log("Buffered");
+                        break;
+                    case MediaPlayer.EndOfMedia:
+                        //console.log("EndOfMedia");
+                        break;
+                    case MediaPlayer.InvalidMedia:
+                        //console.log("InvalidMedia");
+                        break;
+                    case MediaPlayer.UnknownStatus:
+                        //console.log("UnknownStatus");
+                        break;
+                }
+            }
+
             onPlaying: {
                 dataPoints.logVideoPlay(folderModel.get(videoArea.mediaIndex,"fileName"));
             }
@@ -333,7 +383,9 @@ Window {
         repeat: true
         running: true
         triggeredOnStart: true
-        onTriggered: {dateText.set()
+        onTriggered: {
+            dateText.set();
+            player.check();
         }
     }
     Timer {
@@ -354,24 +406,62 @@ Window {
         id: playerSound
         autoLoad:false
         onStatusChanged: {
-            if (playerSound.mediaStatus == MediaPlayer.EndOfMedia) {
-                if(soundEnd){
-                    playerSound.source = ""
-                }else{
-                    playerSound.source = "file:///C:/appKYS_Pis/PISduraklar/example.mp3"
-                    root.soundEnd = true
-                }
+            if (player.status == MediaPlayer.EndOfMedia) {
+                playerSound.source="";
+                root.soundEnd = true;
             }
         }
         onSourceChanged: {
-            playerSound.play();
+            console.log(playerSound.source)
+            if(root.soundEnd == true){
+                root.soundEnd = false;
+            }else{
+               playerSound.play();
+            }
         }
 
     }
     Connections{
         target: dataPoints
+        onAnounceNextStation:{
+            playerSound.source = "file:///"+dataPoints.getPathAudio(dataPoints.nextStation)
+            console.log("sıradaki istasyon")
+        }
+    }
+    Connections{
+        target: dataPoints
+        onAnounceCurrentStation:{
+           playerSound.source = "file:///"+dataPoints.getPathAudio(dataPoints.currentStation)
+            console.log("şimdiki istasyon")
+        }
+    }
+    Connections{
+        target: dataPoints
         onVideoFolderUpdated:{
-            folderModel.refresh();
+           playerSound.play();
+        }
+    }
+    Connections{
+        target: dataPoints
+        onStateDispWatchOnVideoAreaChanged:{
+           screenSaverRight.visible= dataPoints.stateDispWatchOnVideoArea;
+        }
+    }
+    Connections{
+        target: dataPoints
+        onLoadViewFour:{
+            duraklar.clear();
+            for (var i = 0; i < 4; i++) {
+                        duraklar.append({"name": dataPoints.getViewFourMember(i)});
+            }
+        }
+    }
+    Connections{
+        target: dataPoints
+        onUpdateViewFour:{
+            duraklar.remove(0,1);
+            duraklar.append({"name": dataPoints.getViewFourMember(3)});
+
         }
     }
 

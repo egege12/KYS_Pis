@@ -21,9 +21,8 @@
 #define LOG_SAVE_COUNTER 10
 #define MIN_LOG_DEL_SIZE 104857600
 #define MAX_LOG_SIZE 1073741824
-
-
-
+#define DISTANCE_LEAVE_CURRENT_STATION 50.0 /*METER*/
+#define DISTANCE_APRROACH_CURRENT_STATION 70.0 /*METER*/
 
 
 workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
@@ -36,6 +35,11 @@ workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
     this->processBlockedConnection=false;
     this->processBlockedFileLines=false;
     this->processBlockedService=false;
+    this->inStation=false;
+    this->cycleCheckRead=false;
+    this->cycleCheckUpdate=false;
+    this->busStopped= false;
+    this->waitToStop= false;
 }
 
 workerObject::~workerObject()
@@ -112,7 +116,7 @@ bool workerObject::checkGPS()
 {
 
     if(!this->endPoints->iiCom.GPSOk){
-        qDebug()<<"GPS STATUS :"<<this->endPoints->iiCom.GPSOk;
+        //qDebug()<<"GPS STATUS :"<<this->endPoints->iiCom.GPSOk;
         return false;
     }else{
         if(this->endPoints->iiCom.GPSLatitude != this->GPSLatitude){
@@ -227,7 +231,7 @@ void workerObject::readVideoFolder()
         QString folderPath  = "C:/appKYS_Pis/PISVideos";
         QFile csvFile(csvFilePath);
         if (!csvFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-           qDebug() << "CSV dosyası açılamadı!";
+           //qDebug() << "CSV dosyası açılamadı!";
            return;
         }
 
@@ -261,7 +265,7 @@ void workerObject::readVideoFolder()
            }
 
            if (!found) {
-               qDebug() << "Uyarı: CSV dosyasında olmayan video: " << videoName;
+               //qDebug() << "Uyarı: CSV dosyasında olmayan video: " << videoName;
                this->endPoints->setErrCode("Klasörde olup veritabanında olmayan video: " + videoName);
            }
         }
@@ -269,13 +273,46 @@ void workerObject::readVideoFolder()
         for (const endPointsClass::videos& video : this->endPoints->videoList) {
            QString videoFilePath = folderPath + "/" + video.id;
            if (!videoFolder.exists(video.id)) {
-               qDebug() << "Uyarı: Klasörde olmayan video: " << video.id;
+               //qDebug() << "Uyarı: Klasörde olmayan video: " << video.id;
                this->endPoints->setErrCode("Veritabanında olup klasörde olmayan video: " + video.id);
            } else {
                this->endPoints->videoList.append(video);
            }
         }
         emit endPoints->videoFolderUpdated();
+}
+
+void workerObject::checkAuidioFolder()
+{
+        QList<QString> keys;
+        QMap<QString,QList<endPointsClass::station*>>::iterator itrMap;
+        for(itrMap = endPoints->allLineStations.begin();(itrMap!=endPoints->allLineStations.end()); ++itrMap){
+           keys.clear();
+           keys.append(itrMap.key().split("_"));
+           QDir audioLocation1("C:/appKYS_Pis/PISStations/"+keys.at(0));
+           if(audioLocation1.exists()){
+               QDir audioLocation2("C:/appKYS_Pis/PISStations/"+keys.at(0)+"/"+keys.at(1));
+               if(audioLocation2.exists()){
+                    unsigned i = 1;
+                    for(endPointsClass::station* b : itrMap.value()){
+                        QFile audioFile("C:/appKYS_Pis/PISStations/"+keys.at(0)+"/"+keys.at(1)+"/"+QString::number(i)+"_"+b->id+".mp3");
+                        if(audioFile.exists()){
+                            b->soundURL = "C:/appKYS_Pis/PISStations/"+keys.at(0)+"/"+keys.at(1)+"/"+QString::number(i)+"_"+b->id+".mp3";
+                            //qDebug()<<b->soundURL;
+                        }else{
+                             this->endPoints->setErrCode("Klasör bulunumadı C:/appKYS_Pis/PISStations/"+keys.at(0)+"/"+keys.at(1)+"/"+QString::number(i)+"_"+b->id+".mp3");
+                        }
+                        ++i;
+                    }
+               }else{
+                    this->endPoints->setErrCode("Klasör bulunumadı C:/appKYS_Pis/PISStations/"+keys.at(0)+"/"+keys.at(1));
+                    continue;
+               }
+           }else{
+               this->endPoints->setErrCode("Klasör bulunumadı C:/appKYS_Pis/PISStations/"+keys.at(0));
+               continue;
+           }
+        }
 }
 
 void workerObject::enableCycleCheckUpdate(bool cycleCheckUpdate)
@@ -399,16 +436,16 @@ if (sourceFile.open(QIODevice::ReadOnly | QIODevice::Text) &&
            {
                QTextStream writeStream(&destinationFile);
                writeStream << sourceContent;
-               qDebug() << "File has been successfully copied to the destination.";
+               //qDebug() << "File has been successfully copied to the destination.";
            }
            else
            {
-               qDebug() << "Error opening the destination file for writing.";
+               //qDebug() << "Error opening the destination file for writing.";
            }
     }
     else
     {
-           qDebug() << "The file at the destination are the same. No action taken.";
+           //qDebug() << "The file at the destination are the same. No action taken.";
     }
 
     sourceFile.close();
@@ -416,7 +453,7 @@ if (sourceFile.open(QIODevice::ReadOnly | QIODevice::Text) &&
 }
 else
 {
-    qDebug() << "Error opening the files. Please check the file paths.";
+    //qDebug() << "Error opening the files. Please check the file paths.";
 }
 }
 
@@ -570,6 +607,7 @@ void workerObject::readStations()
     this->enableCycleCheckRead(!stationsRead);
     if (stationsRead){
         this->endPoints->setErrCode("-readStations- istasyonlar okundu.");
+
     }else{
         this->endPoints->setErrCode("-readStations- istasyonlar okunamadı.");
     }
@@ -620,7 +658,7 @@ void workerObject::saveDataStations(const QJsonArray& dataStations)
 
     // Dosyayı aç veya oluştur
     if (!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
-        qDebug() << "Dosya açılamadı!";
+        //qDebug() << "Dosya açılamadı!";
         return;
     }
 
@@ -634,9 +672,9 @@ void workerObject::saveDataStations(const QJsonArray& dataStations)
     file.close();
 
     if (fileExists) {
-        qDebug() << "Dosya güncellendi!";
+        //qDebug() << "Dosya güncellendi!";
     } else {
-        qDebug() << "Dosya oluşturuldu!";
+        //qDebug() << "Dosya oluşturuldu!";
     }
 }
 void workerObject::sendHttpReq()
@@ -673,13 +711,13 @@ void workerObject::sendHttpReq()
                QJsonObject lineObj;
                lineObj.insert("lineId", lineId);
                if (json1.isEmpty()) {
-                   qDebug() << "Yön bulunamadı!";
+                   //qDebug() << "Yön bulunamadı!";
                    lineObj.insert("direction1", QJsonArray());
                } else {
                    lineObj.insert("direction1", json1.array());
                }
                if (json2.isEmpty()) {
-                   qDebug() << "Yön bulunamadı!";
+                   //qDebug() << "Yön bulunamadı!";
                    lineObj.insert("direction2", QJsonArray());
                } else {
                    lineObj.insert("direction2", json2.array());
@@ -688,7 +726,7 @@ void workerObject::sendHttpReq()
                QFile file("C:/appKYS_Pis/PISStations/dataStations.json");
                if (file.exists()) {
                    if (!file.open(QIODevice::ReadOnly)) {
-                       qDebug() << "Dosya açılamadı!";
+                       //qDebug() << "Dosya açılamadı!";
                        return;
                    }
                    QByteArray fileData = file.readAll();
@@ -696,7 +734,7 @@ void workerObject::sendHttpReq()
 
                    QJsonDocument fileDoc = QJsonDocument::fromJson(fileData);
                    if (!fileDoc.isArray()) {
-                       qDebug() << "Geçersiz JSON verisi!";
+                       //qDebug() << "Geçersiz JSON verisi!";
                            return;
                    }
 
@@ -720,7 +758,7 @@ void workerObject::sendHttpReq()
                                 }
                            }
                            if (lineNotContains){
-                                qDebug() << "REMOVE";
+                                //qDebug() << "REMOVE";
                                 existingDataStations.removeAt(i);
                            }
                        }
@@ -776,7 +814,7 @@ bool workerObject::readJSON(bool useBackup)
 
 
            if(!existingLineObj["direction1"].isArray() || existingLineObj["direction1"].isNull()){
-               qDebug()<<"direction1 array değil";
+               //qDebug()<<"direction1 array değil";
            }else{
                QJsonArray direction1 = existingLineObj["direction1"].toArray();
                 QList<endPointsClass::station*> listStations;
@@ -801,14 +839,14 @@ bool workerObject::readJSON(bool useBackup)
                        endPoints->addItemStations(ID,"1",listStations);
                    }
                 }else{
-                     qDebug()<<"-readJSON-"<<ID<<"hat numarası yön 1 verisi eksik okundu. ";
+                     //qDebug()<<"-readJSON-"<<ID<<"hat numarası yön 1 verisi eksik okundu. ";
                      endPoints->setErrCode("-readJSON-"+ID+"hat numarası yön 1 verisi eksik okundu. ");
                      return false;
                 }
            }
 
            if(!existingLineObj["direction2"].isArray() || existingLineObj["direction2"].isNull() ){
-               qDebug()<<"direction2 array değil";
+               //qDebug()<<"direction2 array değil";
            }else{
                QJsonArray direction2 = existingLineObj["direction2"].toArray();
                QList<endPointsClass::station*> listStations;
@@ -832,7 +870,7 @@ bool workerObject::readJSON(bool useBackup)
                 endPoints->addItemStations(ID,"2",listStations);
                }
            }else{
-                qDebug()<<"-readJSON-"<<ID<<"hat numarası yön 2 verisi eksik okundu. ";
+                //qDebug()<<"-readJSON-"<<ID<<"hat numarası yön 2 verisi eksik okundu. ";
                 endPoints->setErrCode("-readJSON-"+ID+"hat numarası yön 2 verisi eksik okundu. ");
                 return false;
            }
@@ -854,6 +892,9 @@ bool workerObject::readJSON(bool useBackup)
 
         this->endPoints->setErrCode("-readJSON- dataStations.json açılamadı");
         return false;
+    }
+    if(statJson){
+        checkAuidioFolder();
     }
     return statJson;
 }
@@ -1002,7 +1043,7 @@ void workerObject::rwComApp()
                 }
                 if(IIDataObj.contains("GPSOk")){
                     this->endPoints->iiCom.GPSOk = IIDataObj["GPSOk"].toBool();
-                    qDebug()<<"GPSOk"<<this->endPoints->iiCom.GPSOk ;
+                    //qDebug()<<"GPSOk"<<this->endPoints->iiCom.GPSOk ;
                 }else{
                     this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> GPSOk bulunamadı.");
                 }
@@ -1106,7 +1147,8 @@ void workerObject::cycleCall()
     this->endPoints->setStateNoGpsInfo(!checkGPS());
     this->endPoints->setactualLatitude(QString::number(this->endPoints->iiCom.GPSLatitude));
     this->endPoints->setactualLongitude(QString::number(this->endPoints->iiCom.GPSLongtitude));
-
+    this->endPoints->setVehicleSpeed((QString::number(this->endPoints->iiCom.VehicleSpeed)));
+    mainPIS();
 
 
     //Cycle operation check
@@ -1145,9 +1187,6 @@ void workerObject::cycleCall()
         }
     }
     //Cycle operation exits
-
-
-
 
 }
 
@@ -1188,7 +1227,7 @@ void workerObject::beginSpecificStation(QString stationID)
     QString currentStationID,nextStationID = "";
     bool foundFlag = false;
     unsigned int index =0;
-    for(endPointsClass::station Obj : this->endPoints->currentLineStations){
+    for(endPointsClass::station &Obj : this->endPoints->currentLineStations){
         if((foundFlag) && (nextStationID=="")){
             nextStationID=Obj.id;
             break;
@@ -1197,6 +1236,8 @@ void workerObject::beginSpecificStation(QString stationID)
                 currentStationID = Obj.id;
                 index = this->endPoints->currentLineStations.indexOf(Obj);
                 foundFlag = true;
+            }else{
+                Obj.passed = true;
             }
         }
     }
@@ -1205,10 +1246,11 @@ void workerObject::beginSpecificStation(QString stationID)
                 this->endPoints->currentViewFour.append(this->endPoints->currentLineStations.at(i).name);
         //qDebug()<<this->endPoints->currentLineStations.at(i).name;
         }
-    emit endPoints->updateViewFour();
+    emit endPoints->loadViewFour();
     this->endPoints->setCurrentStation(currentStationID);
     this->endPoints->setNextStation(nextStationID);
     endPoints->setCurrentStationOrder(index);
+    this->endPoints->setSelectionDone(true);
 }
 double workerObject::calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371000; // Earth radius
@@ -1228,6 +1270,64 @@ double workerObject::calculateDistance(double lat1, double lon1, double lat2, do
     double distance = qAbs(earthRadius * c);
     return distance;
 }
+
+void workerObject::mainPIS()
+{
+    QString selected = this->endPoints->selectedLine.replace("->","_");
+    busStopped = (this->endPoints->vehicleSpeed().toDouble() < 3.0);
+
+    if(!this->endPoints->stateNoGpsInfo()){
+        if(this->endPoints->selectionDone()){
+            this->endPoints->setStateDispTextOnStationArea(false);
+            double currentStationLatitude = this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()).latitude.toDouble();
+            double currentStationLongitude = this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()).longitude.toDouble();
+            qDebug()<<"konumları okudum";
+            if(this->inStation){
+                qDebug()<<"istasyondayım";
+                    if(!busStopped && (DISTANCE_LEAVE_CURRENT_STATION < this->calculateDistance(currentStationLatitude,currentStationLongitude,this->endPoints->actualLatitude().toDouble(),this->endPoints->actualLongitude().toDouble()))){
+                    emit this->endPoints->anounceNextStation();
+                    inStation = false;
+                    this->endPoints->currentLineStations[this->endPoints->currentStationOrder()].passed = true;
+                    if(this->endPoints->currentStationOrder()+1<this->endPoints->currentLineStations.size()){
+                            this->endPoints->setCurrentStationOrder(this->endPoints->currentStationOrder()+1);
+                    }else{
+                            this->endPoints->setCurrentStationOrder(this->endPoints->currentStationOrder());
+                    }
+                    this->endPoints->setCurrentStation(this->endPoints->nextStation());
+                    this->endPoints->currentViewFour.pop_front();
+                    if(this->endPoints->currentStationOrder()+1<this->endPoints->currentLineStations.size()){
+                            this->endPoints->setNextStation(this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()+1).id);
+                            this->endPoints->currentViewFour.append(this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()+3).name);
+                    }else{
+                            this->endPoints->setNextStation("0");
+                            this->endPoints->currentViewFour.append("");
+                    }
+                    emit this->endPoints->updateViewFour();
+                    qDebug()<<"duraktan ayrılış";
+                }
+            }else{
+                qDebug()<<"istasyonda değilim";
+                    if(DISTANCE_APRROACH_CURRENT_STATION > this->calculateDistance(currentStationLatitude,currentStationLongitude,this->endPoints->actualLatitude().toDouble(),this->endPoints->actualLongitude().toDouble())){
+                    if(busStopped && waitToStop){
+                            emit this->endPoints->anounceCurrentStation();
+                            qDebug()<<"ikinci anonsu istedim";
+                            inStation = true;
+                            waitToStop= false;
+                    }else if(!waitToStop){
+                            emit this->endPoints->anounceCurrentStation();
+                            waitToStop=true;
+                            qDebug()<<"ilk anonsu istedim";
+                    }else{
+                        qDebug()<<"boştayım";
+                    }
+                }
+            }
+        }
+    }else{
+                this->endPoints->setStateDispTextOnStationArea(true);
+    }
+
+}
 void workerObject::handleLineSelection()
 {
 
@@ -1237,7 +1337,7 @@ void workerObject::handleLineSelection()
             this->endPoints->setLineSelected(false);
             this->endPoints->setCurrentLine(this->endPoints->selectedLine.replace("_","->"));
         }else{
-            qDebug()<<"handlelineselection - else";
+            //qDebug()<<"handlelineselection - else";
             double minDistance = std::numeric_limits<double>::max(); // Çok büyük bir başlangıç değeri
             endPointsClass::station searchItem;
 

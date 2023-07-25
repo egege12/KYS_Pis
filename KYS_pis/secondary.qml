@@ -111,7 +111,7 @@ Window {
             }
             Text{
                 anchors.centerIn: parent
-                text: "İYİ SÜRÜŞLER"
+                text: "BOZANKAYA"
                 font.pixelSize: 24
                 elide: Text.ElideRight
                 antialiasing: true
@@ -125,7 +125,7 @@ Window {
             }
             Text {
                 id: timeText
-                font.pixelSize: 24
+                font.pixelSize: 18
                 text: Qt.formatTime(new Date(), "hh:mm")
                 anchors.right: logoBuyuksehir.left
                 anchors.verticalCenter: parent.verticalCenter

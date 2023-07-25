@@ -3,6 +3,7 @@
 #ifndef ENDPOINTSCLASS_H
 #define ENDPOINTSCLASS_H
 
+#include "qdebug.h"
 #include "qobject.h"
 #include <QFile>
 #include <QList>
@@ -28,21 +29,30 @@ class endPointsClass: public QObject{
     Q_PROPERTY(bool updateStations READ updateStations WRITE setUpdateStations NOTIFY updateStationsChanged)
     Q_PROPERTY(bool comAppOK READ comAppOK WRITE setComAppOK NOTIFY comAppOKChanged);
 
-
     //Operational Datas
     Q_PROPERTY(bool lineSelected READ lineSelected WRITE setLineSelected NOTIFY lineSelectedChanged)
+    Q_PROPERTY(bool selectionDone READ selectionDone WRITE setSelectionDone NOTIFY selectionDoneChanged)
     Q_PROPERTY(QString currentLine READ currentLine WRITE setCurrentLine NOTIFY currentLineChanged)
-    Q_PROPERTY(QString currentDirection READ currentDirection WRITE setCurrentDirection NOTIFY currentDirectionChanged)
     Q_PROPERTY(QString currentStation READ currentStation WRITE setCurrentStation NOTIFY currentStationChanged)
     Q_PROPERTY(QString nextStation READ nextStation WRITE setNextStation NOTIFY nextStationChanged)
-    Q_PROPERTY(QString actualLongitude READ actualLongitude WRITE setactualLongitude NOTIFY actualLongitudeChanged)
-    Q_PROPERTY(QString actualLatitude READ actualLatitude WRITE setactualLatitude NOTIFY actualLatitudeChanged)
+
     Q_PROPERTY(QString currentSpecialAnounce READ currentSpecialAnounce WRITE setCurrentSpecialAnounce NOTIFY currentSpecialAnounceChanged)
     Q_PROPERTY(unsigned currentStationOrder READ currentStationOrder WRITE setCurrentStationOrder NOTIFY currentStationOrderChanged)
     Q_PROPERTY(bool stateSpecialAnounceActive READ stateSpecialAnounceActive WRITE setStateSpecialAnounceActive NOTIFY stateSpecialAnounceActiveChanged)
     Q_PROPERTY(bool stateRegularAnounceActive READ stateRegularAnounceActive WRITE setStateRegularAnounceActive NOTIFY stateRegularAnounceActiveChanged)
+
+    /*Confirmation*/
     Q_PROPERTY(QString stationConfirmed READ stationConfirmed WRITE setStationConfirmed NOTIFY StationConfirmedChanged)
     Q_PROPERTY(QString confirmStationID READ confirmStationID WRITE setConfirmStationID NOTIFY confirmStationIDChanged)
+
+    /*Communication parameters*/
+    Q_PROPERTY(QString vehicleSpeed READ vehicleSpeed WRITE setVehicleSpeed NOTIFY vehicleSpeedChanged)
+    Q_PROPERTY(QString actualLongitude READ actualLongitude WRITE setactualLongitude NOTIFY actualLongitudeChanged)
+    Q_PROPERTY(QString actualLatitude READ actualLatitude WRITE setactualLatitude NOTIFY actualLatitudeChanged)
+    Q_PROPERTY(bool anyDoorOpen READ anyDoorOpen WRITE setAnyDoorOpen NOTIFY anyDoorOpenChanged)
+    Q_PROPERTY(bool updateInProgress READ updateInProgress WRITE setUpdateInProgress NOTIFY updateInProgressChanged)
+    Q_PROPERTY(QString vehicleID READ vehicleID WRITE setVehicleID NOTIFY vehicleIDChanged)
+
 public:
     struct IIData{
         unsigned VehicleID;
@@ -126,8 +136,6 @@ public:
     QString currentSpecialAnounce() const;
     void setCurrentSpecialAnounce(const QString &newCurrentSpecialAnounce);
 
-    QString currentDirection() const;
-    void setCurrentDirection(const QString &newCurrentDirection);
 
     QString nextStation() const;
     void setnextStation(const QString &newNextStation);
@@ -166,6 +174,21 @@ public:
     QString confirmStationID() const;
     void setConfirmStationID(const QString &newConfirmStationID);
 
+    QString vehicleSpeed() const;
+    void setVehicleSpeed(const QString &newVehicleSpeed);
+
+    bool anyDoorOpen() const;
+    void setAnyDoorOpen(bool newAnyDoorOpen);
+
+    bool updateInProgress() const;
+    void setUpdateInProgress(bool newUpdateInProgress);
+
+    QString vehicleID() const;
+    void setVehicleID(const QString &newVehicleID);
+
+    bool selectionDone() const;
+    void setSelectionDone(bool newSelectionDone);
+
 signals:
     void stateNoFolderFoundChanged();
 
@@ -195,8 +218,6 @@ signals:
 
     void currentSpecialAnounceChanged();
 
-    void currentDirectionChanged();
-
     void nextStationChanged();
 
     void lineSelectedChanged();
@@ -217,10 +238,10 @@ signals:
     /*application Signals*/
     void anounceCurrentStation();
 
-    void anonuceNextStation();
+    void anounceNextStation();
 
+    void loadViewFour();
     void updateViewFour();
-
     void confirmPopup();
 
     void currentStationOrderChanged();
@@ -232,6 +253,16 @@ signals:
     void confirmationIDChanged();
 
     void videoFolderUpdated();
+
+    void vehicleSpeedChanged();
+
+    void anyDoorOpenChanged();
+
+    void updateInProgressChanged();
+
+    void vehicleIDChanged();
+
+    void selectionDoneChanged();
 
 public slots:
     /*Application functions*/
@@ -248,8 +279,13 @@ public slots:
 
     /*Video*/
     void logVideoPlay(QString mediaId);
+    void setVideoUnavailable();
+    void setVideoAvailable();
 
+    /*Direction*/
+    QString getViewFourMember(unsigned index);
 
+    QString getPathAudio(QString stationID);
     /*Application functions*/
 private:
     bool m_stateNoFolderFound;
@@ -265,7 +301,6 @@ private:
     QString m_currentLine;
     QString m_currentStation;
     QString m_currentSpecialAnounce;
-    QString m_currentDirection;
     QString m_nextStation;
     bool m_lineSelected;
     bool m_dataImported;
@@ -276,13 +311,18 @@ private:
     unsigned int m_currentStationOrder;
     QString m_stationConfirmed;
     QString m_confirmStationID;
+    QString m_vehicleSpeed;
+    bool m_anyDoorOpen;
+    bool m_updateInProgress;
+    QString m_vehicleID;
+    bool m_selectionDone;
 };
 struct  endPointsClass::station{
     QString id;
     QString name;
     QString latitude;
     QString longitude;
-    QString soundOK;
+    QString soundURL;
     QString passed;
     bool operator==(const station& other) const {
         return this->id == other.id;
@@ -328,7 +368,6 @@ inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
      m_currentLine="null";
      m_currentStation="null";
      m_currentSpecialAnounce="null";
-     m_currentDirection="null";
      m_nextStation="null";
      m_lineSelected=false;
      m_dataImported=false;
@@ -462,6 +501,32 @@ inline void endPointsClass::logVideoPlay(QString mediaId)
         }
     }
 
+}
+
+inline void endPointsClass::setVideoUnavailable()
+{
+    setStateDispWatchOnVideoArea(true);
+}
+
+inline void endPointsClass::setVideoAvailable()
+{
+    setStateDispWatchOnVideoArea(false);
+}
+
+inline QString endPointsClass::getViewFourMember(unsigned int index)
+{
+    return this->currentViewFour.at(index);
+}
+
+inline QString endPointsClass::getPathAudio(QString stationID)
+{
+    for(endPointsClass::station Obj : this->currentLineStations){
+        if(Obj.id == stationID){
+            qDebug()<<"bulduummmmmmmmmmmmmmmmmmmm";
+            return Obj.soundURL;
+        }
+    }
+    return "";
 }
 
 
@@ -641,31 +706,11 @@ inline void endPointsClass::setCurrentSpecialAnounce(const QString &newCurrentSp
     emit currentSpecialAnounceChanged();
 }
 
-inline QString endPointsClass::currentDirection() const
-{
-    return m_currentDirection;
-}
-
-inline void endPointsClass::setCurrentDirection(const QString &newCurrentDirection)
-{
-    if (m_currentDirection == newCurrentDirection)
-        return;
-    m_currentDirection = newCurrentDirection;
-    emit currentDirectionChanged();
-}
-
 inline QString endPointsClass::nextStation() const
 {
     return m_nextStation;
 }
 
-inline void endPointsClass::setnextStation(const QString &newNextStation)
-{
-    if (m_nextStation == newNextStation)
-        return;
-    m_nextStation = newNextStation;
-    emit nextStationChanged();
-}
 
 inline void endPointsClass::setNextStation(const QString &newNextStation)
 {
@@ -804,5 +849,71 @@ inline void endPointsClass::setConfirmStationID(const QString &newConfirmStation
     emit confirmStationIDChanged();
 }
 
+
+
+inline QString endPointsClass::vehicleSpeed() const
+{
+    return m_vehicleSpeed;
+}
+
+inline void endPointsClass::setVehicleSpeed(const QString &newVehicleSpeed)
+{
+    if (m_vehicleSpeed == newVehicleSpeed)
+        return;
+    m_vehicleSpeed = newVehicleSpeed;
+    emit vehicleSpeedChanged();
+}
+
+inline bool endPointsClass::anyDoorOpen() const
+{
+    return m_anyDoorOpen;
+}
+
+inline void endPointsClass::setAnyDoorOpen(bool newAnyDoorOpen)
+{
+    if (m_anyDoorOpen == newAnyDoorOpen)
+        return;
+    m_anyDoorOpen = newAnyDoorOpen;
+    emit anyDoorOpenChanged();
+}
+
+inline bool endPointsClass::updateInProgress() const
+{
+    return m_updateInProgress;
+}
+
+inline void endPointsClass::setUpdateInProgress(bool newUpdateInProgress)
+{
+    if (m_updateInProgress == newUpdateInProgress)
+        return;
+    m_updateInProgress = newUpdateInProgress;
+    emit updateInProgressChanged();
+}
+
+inline QString endPointsClass::vehicleID() const
+{
+    return m_vehicleID;
+}
+
+inline void endPointsClass::setVehicleID(const QString &newVehicleID)
+{
+    if (m_vehicleID == newVehicleID)
+        return;
+    m_vehicleID = newVehicleID;
+    emit vehicleIDChanged();
+}
+
+inline bool endPointsClass::selectionDone() const
+{
+    return m_selectionDone;
+}
+
+inline void endPointsClass::setSelectionDone(bool newSelectionDone)
+{
+    if (m_selectionDone == newSelectionDone)
+        return;
+    m_selectionDone = newSelectionDone;
+    emit selectionDoneChanged();
+}
 
 #endif // ENDPOINTSCLASS_H

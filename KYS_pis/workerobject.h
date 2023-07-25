@@ -23,7 +23,10 @@ private:
     //Old containers
     double GPSLatitude;
     double GPSLongtitude;
-
+    //Application members
+    bool inStation;
+    bool busStopped;
+    bool waitToStop;
     //Application Methods
 
     void beginSpecificStation(QString stationID);
@@ -56,6 +59,7 @@ public:
     bool checkFileLines();
     bool checkFileJson();
     void readVideoFolder();
+    void checkAuidioFolder();
 
     //If one fails cycle check starts for that
     /*CYCLE OPERATIONS*/void enableCycleCheckUpdate(bool cycleCheckUpdate);
