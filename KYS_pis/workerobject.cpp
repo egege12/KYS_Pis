@@ -1014,12 +1014,12 @@ void workerObject::rwComApp()
                 QJsonObject fixedObject;
                 fixedObject.insert("VehicleID",0);
                 fixedObject.insert("LifeSign",0);
-                fixedObject.insert("GPSOk","false");
+                fixedObject.insert("GPSOk",false);
                 fixedObject.insert("GPSLongtitude",0);
                 fixedObject.insert("GPSLatitude",0);
                 fixedObject.insert("VehicleSpeed",0);
-                fixedObject.insert("AnyDoorOpen","true");
-                fixedObject.insert("ProgressUpdate","true");
+                fixedObject.insert("AnyDoorOpen",true);
+                fixedObject.insert("ProgressUpdate",true);
                 QJsonDocument QJsonDocument(fixedObject);
                 appToPis.write(QJsonDocument.toJson());
                 appToPis.close();
@@ -1318,7 +1318,7 @@ void workerObject::mainPIS()
                                 inStation = true;
                                 waitToStop= false;
                         }else if(!waitToStop){
-                                emit this->endPoints->anounceCurrentStation();
+                                emit this->endPoints->anounceNextStation();
                                 waitToStop=true;
                                  //qDebug()<<"ilk anonsu istedim";
                         }else{

@@ -19,7 +19,7 @@ Item {
                 disableButtonClick: false
                 buttonText: ""
                 onButtonClicked:{
-                    stack.push("qrc:/driverDirectionSelection.qml");
+                    stack.pop("qrc:/driverDirectionSelection.qml");
                 }
             }
             MenuButton {

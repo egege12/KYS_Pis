@@ -1,14 +1,15 @@
 import QtQuick 2.3
 import QtQuick.Window 2.3
 import QtQuick.Controls 2.0
+import QtMultimedia 5.15
 Window {
     visible: true
     width: 800
     height: 600
     color: "white"
     Component.onCompleted: {
-        x= Qt.application.screens[1].virtualX;
-        y= Qt.application.screens[1].virtualY;
+        x= Qt.application.screens[0].virtualX;
+        y= Qt.application.screens[0].virtualY;
     }
     flags: Qt.FramelessWindowHint | Qt.Window | Qt.MaximizeUsingFullscreenGeometryHint
 
@@ -18,7 +19,7 @@ Window {
     property int currentDirectionNumber : 0
     property string nextStationName : "Bilinmiyor"
     property string currentStationName :"Bilinmiyor"
-
+    property bool audioPaused : false;
     //
 //    Rectangle {
 //        id:testArea
@@ -367,7 +368,133 @@ Window {
             currentDirectionNo.update(dataPoints.currentLine)
         }
     }
+    MediaPlayer {
+        id: playerSound
+        onStatusChanged: {
+            switch (playerSound.status) {
+                case MediaPlayer.NoMedia:
+                    //console.log("NoMedia");
+                    break;
+                case MediaPlayer.Loading:
+                    //console.log("Loading");
+                    break;
+                case MediaPlayer.Loaded:
+                    //console.log("Loaded");
+                    break;
+                case MediaPlayer.Buffering:
+                    //console.log("Buffering");
+                    break;
+                case MediaPlayer.Stalled:
+                    //console.log("Stalled");
+                    break;
+                case MediaPlayer.Buffered:
+                    //console.log("Buffered");
+                    break;
+                case MediaPlayer.EndOfMedia:
+                    playerSound.source="";
+                    audioPaused=false;
+                    break;
+                case MediaPlayer.InvalidMedia:
+                    //console.log("InvalidMedia");
+                    break;
+                case MediaPlayer.UnknownStatus:
+                    //console.log("UnknownStatus");
+                    break;
+            }
+        }
+        onSourceChanged: {
+            if(!audioPaused){
+                if(playerSound.source !=="")
+                    playerSound.play();
+            }
+        }
+
+    }
+    Audio{
+        id:audio
+        source:playerSound
+    }
+    MediaPlayer {
+        id: playerStations
+        onStatusChanged: {
+            switch (playerStations.status) {
+                case MediaPlayer.NoMedia:
+                    //console.log("NoMedia");
+                    break;
+                case MediaPlayer.Loading:
+                    //console.log("Loading");
+                    break;
+                case MediaPlayer.Loaded:
+                    //console.log("Loaded");
+                    break;
+                case MediaPlayer.Buffering:
+                    //console.log("Buffering");
+                    break;
+                case MediaPlayer.Stalled:
+                    //console.log("Stalled");
+                    break;
+                case MediaPlayer.Buffered:
+                    //console.log("Buffered");
+                    break;
+                case MediaPlayer.EndOfMedia:
+                    playerStations.source="";
+                    dataPoints.pauseAnounce = false;
+                    break;
+                case MediaPlayer.InvalidMedia:
+                    //console.log("InvalidMedia");
+                    break;
+                case MediaPlayer.UnknownStatus:
+                    //console.log("UnknownStatus");
+                    break;
+            }
+        }
+        onSourceChanged: {
+                if(playerStations.source !==""){
+                    dataPoints.pauseAnounce = true;
+                    playerStations.play();
+                }else{
+                    dataPoints.pauseAnounce = false;
+                }
 
 
+
+        }
+
+    }
+    Audio{
+        id:audioStations
+        source:playerStations
+    }
+
+    Connections{
+        target:dataPoints
+        onPlaySoundStationsChanged:
+            if(playerStations.source != dataPoints.playSoundStations) {
+                playerStations.source = dataPoints.playSoundStations;
+            }else{
+                playerStations.source = "";
+            }
+    }
+    Connections{
+        target:dataPoints
+        onPlaySoundChanged:
+            if(playerSound.source != dataPoints.playSound) {
+                playerSound.source = dataPoints.playSound;
+            }else{
+                playerSound.source = "";
+            }
+    }
+    Connections{
+        target:dataPoints
+        onPauseAnounceChanged:{
+            if(!dataPoints.pauseAnounce){
+                playerSound.play();
+                audioPaused=false;
+            }else{
+                playerSound.pause();
+                audioPaused=true;
+            }
+        }
+    }
 }
 

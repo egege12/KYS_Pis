@@ -52,7 +52,9 @@ class endPointsClass: public QObject{
     Q_PROPERTY(bool anyDoorOpen READ anyDoorOpen WRITE setAnyDoorOpen NOTIFY anyDoorOpenChanged)
     Q_PROPERTY(bool updateInProgress READ updateInProgress WRITE setUpdateInProgress NOTIFY updateInProgressChanged)
     Q_PROPERTY(QString vehicleID READ vehicleID WRITE setVehicleID NOTIFY vehicleIDChanged)
-
+    Q_PROPERTY(QString playSound READ playSound WRITE setPlaySound NOTIFY playSoundChanged)
+    Q_PROPERTY(QString playSoundStations READ playSoundStations WRITE setPlaySoundStations NOTIFY playSoundStationsChanged)
+    Q_PROPERTY(bool pauseAnounce READ pauseAnounce WRITE setPauseAnounce NOTIFY pauseAnounceChanged)
 public:
     struct IIData{
         unsigned VehicleID;
@@ -189,6 +191,15 @@ public:
     bool selectionDone() const;
     void setSelectionDone(bool newSelectionDone);
 
+    QString playSound() const;
+    void setPlaySound(const QString &newPlaySound);
+
+    bool pauseAnounce() const;
+    void setPauseAnounce(bool newPauseAnounce);
+
+    QString playSoundStations() const;
+    void setPlaySoundStations(const QString &newPlaySoundStations);
+
 signals:
     void stateNoFolderFoundChanged();
 
@@ -264,6 +275,12 @@ signals:
 
     void selectionDoneChanged();
 
+    void playSoundChanged();
+
+    void pauseAnounceChanged();
+
+    void playSoundStationsChanged();
+
 public slots:
     /*Application functions*/
     QList<QString> getLineList();
@@ -288,6 +305,8 @@ public slots:
     QString getPathAudio(QString stationID);
 
     QList<QString> getAnounceList(QString path);
+
+
     /*Application functions*/
 private:
     bool m_stateNoFolderFound;
@@ -318,6 +337,9 @@ private:
     bool m_updateInProgress;
     QString m_vehicleID;
     bool m_selectionDone;
+    QString m_playSound;
+    bool m_pauseAnounce;
+    QString m_playSoundStations;
 };
 struct  endPointsClass::station{
     QString id;
@@ -549,12 +571,13 @@ inline QList<QString> endPointsClass::getAnounceList(QString path)
         directory.setNameFilters(filters);
 
         QStringList fileList = directory.entryList();
-        for (const QString &fileName : fileList) {
-            anounceList.append(fileName);
+        for ( QString &fileName : fileList) {
+            anounceList.append(fileName.replace(".mp3",""));
         }
     }
     return anounceList;
 }
+
 
 
 inline bool endPointsClass::stateNoFolderFound() const
@@ -941,6 +964,46 @@ inline void endPointsClass::setSelectionDone(bool newSelectionDone)
         return;
     m_selectionDone = newSelectionDone;
     emit selectionDoneChanged();
+}
+
+inline QString endPointsClass::playSound() const
+{
+    return m_playSound;
+}
+
+inline void endPointsClass::setPlaySound(const QString &newPlaySound)
+{
+    m_playSound = newPlaySound;
+    emit playSoundChanged();
+}
+
+
+inline bool endPointsClass::pauseAnounce() const
+{
+    return m_pauseAnounce;
+}
+
+inline void endPointsClass::setPauseAnounce(bool newPauseAnounce)
+{
+    if (m_pauseAnounce == newPauseAnounce)
+        return;
+    m_pauseAnounce = newPauseAnounce;
+    emit pauseAnounceChanged();
+}
+
+
+
+inline QString endPointsClass::playSoundStations() const
+{
+    return m_playSoundStations;
+}
+
+inline void endPointsClass::setPlaySoundStations(const QString &newPlaySoundStations)
+{
+    if (m_playSoundStations == newPlaySoundStations)
+        return;
+    m_playSoundStations = newPlaySoundStations;
+    emit playSoundStationsChanged();
 }
 
 #endif // ENDPOINTSCLASS_H

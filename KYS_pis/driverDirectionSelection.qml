@@ -20,7 +20,7 @@ Item {
                 disableButtonClick: false
                 buttonText: ""
                 onButtonClicked:{
-                    stack.push("qrc:/driverMidArea.qml");
+                    stack.pop("qrc:/driverMidArea.qml");
 
                 }
             }

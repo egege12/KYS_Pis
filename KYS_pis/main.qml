@@ -12,8 +12,8 @@ Window {
     height: 540
     color: "white"
     Component.onCompleted: {
-        x= Qt.application.screens[0].virtualX;
-        y= Qt.application.screens[0].virtualY;
+        x= Qt.application.screens[1].virtualX;
+        y= Qt.application.screens[1].virtualY;
     }
     flags: Qt.FramelessWindowHint | Qt.Window | Qt.MaximizeUsingFullscreenGeometryHint
     Loader {
@@ -378,6 +378,18 @@ Window {
         }
     }
     Timer {
+        id: nextstationTimer
+        interval: 2000
+        repeat: false
+        running: true
+        onTriggered: {
+            if(nextStationTag){
+                dataPoints.playSoundStations="file:///"+dataPoints.getPathAudio(dataPoints.currentStation);
+                nextStationTag=false;
+            }
+        }
+    }
+    Timer {
         id: dateTimer
         interval: 3600
         repeat: true
@@ -399,46 +411,25 @@ Window {
             videoArea.mediaIndex=1
         }
     }
-
-
-    property bool soundEnd: false;
-    MediaPlayer {
-        id: playerSound
-        autoLoad:false
-        onStatusChanged: {
-            if (player.status == MediaPlayer.EndOfMedia) {
-                playerSound.source="";
-                root.soundEnd = true;
-            }
-        }
-        onSourceChanged: {
-            console.log(playerSound.source)
-            if(root.soundEnd == true){
-                root.soundEnd = false;
-            }else{
-               playerSound.play();
-            }
-        }
-
-    }
+    property bool nextStationTag : false;
     Connections{
         target: dataPoints
         onAnounceNextStation:{
-            playerSound.source = "file:///"+dataPoints.getPathAudio(dataPoints.nextStation)
-            console.log("sıradaki istasyon")
+            dataPoints.playSoundStations="file:///C:/appKYS_Pis/PISStations/next_station.mp3"
+            nextstationTimer.start();
+            nextStationTag=true;
         }
     }
     Connections{
         target: dataPoints
         onAnounceCurrentStation:{
-           playerSound.source = "file:///"+dataPoints.getPathAudio(dataPoints.currentStation)
-            console.log("şimdiki istasyon")
+           dataPoints.playSoundStations="file:///"+dataPoints.getPathAudio(dataPoints.currentStation);
         }
     }
     Connections{
         target: dataPoints
         onVideoFolderUpdated:{
-           playerSound.play();
+           player.play();
         }
     }
     Connections{
