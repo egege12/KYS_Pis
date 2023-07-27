@@ -139,7 +139,54 @@ Window {
                     fillMode: Image.PreserveAspectFit
                     mipmap:true
                 }
+                Image{
+                    id:iconSpeed
+                    anchors.top: logoUlasim.bottom
+                    anchors.topMargin:30
+                    anchors.left:logoUlasim.left
+                    width:60
+                    source:"qrc:/img/iconSpeed.png"
+                    fillMode: Image.PreserveAspectFit
+                    mipmap:true
+                }
+                Text {
+                    id: speedText
+                    font.pixelSize: 52
+                    text: "23"
+                    anchors.bottom: iconSpeed.bottom
+                    anchors.bottomMargin: -10
+                    anchors.left : iconSpeed.right
+                    anchors.leftMargin: 30
+                    elide: Text.ElideRight
+                    antialiasing: true
+                    font.hintingPreference: Font.PreferNoHinting
+                    style: Text.Normal
+                    focus: true
+                    font.weight: Font.Bold
+                    font.family: "Tahoma"
+                    color: "white"
+                    function set(){
+                        speedkmhText.text= dataPoints.vehicleSpeed
+                    }
+                }
+                Text {
+                    id: speedkmhText
+                    font.pixelSize: 24
+                    text: "km\h"
+                    anchors.bottom: speedText.bottom
+                    anchors.bottomMargin: 5
+                    anchors.right : logoAlo.right
+                    elide: Text.ElideRight
+                    antialiasing: true
+                    font.hintingPreference: Font.PreferNoHinting
+                    style: Text.Normal
+                    focus: true
+                    font.weight: Font.Bold
+                    font.family: "Tahoma"
+                    color: "white"
+                }
             }
+
 
 
 
@@ -300,6 +347,7 @@ Window {
         height: parent.height
         color : "black"
         property int mediaIndex
+        property bool mediawait : false;
         Image {
             id: screenSaverRight
             width: parent.width
@@ -315,88 +363,82 @@ Window {
             id: folderModel
             folder: "file:///C:/appKYS_Pis/PISVideos"
             nameFilters: ["*.mp4"]
-            onStatusChanged: {
-                if(videoArea.mediaIndex > (folderModel.count-1))
-                    videoArea.mediaIndex=0
-            }
-            function update(){
-                folderModel.folder = "";
-                folderModel.reload();
-            }
-            function reload(){
-                folderModel.folder = "file:///C:/appKYS_Pis/PISVideos";
-                videoStarter.start();
-            }
         }
-        property bool mediaError : false;
         property int endOfMediaCounter : 0;
         MediaPlayer {
             id: player
             muted: true
             onStatusChanged: {
                 if (player.status == MediaPlayer.EndOfMedia) {
-                    dataPoints.setVideoAvailable();
-                    player.source = folderModel.get(videoArea.mediaIndex,"filePath")
-                    if(videoArea.mediaIndex < (folderModel.count-1))
+
+                    if(folderModel.count == 1)
+                        player.play();
+                    else if(videoArea.mediaIndex < (folderModel.count-1)){
                         videoArea.mediaIndex++
-                    else
+                    }else{
                         videoArea.mediaIndex=0
+                    }
+                    player.source = folderModel.get(videoArea.mediaIndex,"filePath")
+
                 }else if(player.mediaStatus === MediaPlayer.InvalidMedia || player.mediaStatus === MediaPlayer.NoMedia ){
                     videoArea.mediaIndex=0
                 }
-
             }
 
-
             function check(){
-                if((player.status === MediaPlayer.NoMedia) || (player.status ===MediaPlayer.InvalidMedia) ||(videoArea.endOfMediaCounter>4)||(player.error !== MediaPlayer.NoError)|| (player.status ===MediaPlayer.UnknownStatus) || (player.status ===MediaPlayer.Stalled)){
+                if((player.status === MediaPlayer.NoMedia) || (player.status ===MediaPlayer.InvalidMedia) ||(videoArea.endOfMediaCounter>2)||(player.error !== MediaPlayer.NoError)|| (player.status ===MediaPlayer.UnknownStatus) || (player.status ===MediaPlayer.Stalled)){
                     dataPoints.setVideoUnavailable();
-                    folderModel.update();
+                    if(!videoArea.mediawait){
+                        videoArea.mediawait = true
+                        videoStarter.start()
+                    }
                 }else{
                     dataPoints.setVideoAvailable();
                 }
                 switch (player.status) {
                     case MediaPlayer.NoMedia:
-                        //console.log("NoMedia");
+                        console.log("NoMedia");
                         //dataPoints.errCode="Medya yok"
                         videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.Loading:
-                        //console.log("Loading");
+                        console.log("Loading");
                         //dataPoints.errCode="yükleniyor."
                         videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.Loaded:
-                        //console.log("Loaded");
+                        console.log("Loaded");
                         //dataPoints.errCode="yüklendi."
                         videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.Buffering:
-                        //console.log("Buffering");
+                        console.log("Buffering");
+                        dataPoints.setVideoAvailable();
                         //dataPoints.errCode="Stoklanıyor"
                         videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.Stalled:
-                        //console.log("Stalled");
+                        console.log("Stalled");
                         //dataPoints.errCode="Video çöktü"
                         break;
                     case MediaPlayer.Buffered:
-                        //console.log("Buffered");
+                        console.log("Buffered");
+                        dataPoints.setVideoAvailable();
                         //dataPoints.errCode="Buffer yapıldı"
                         videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.EndOfMedia:
-                        //console.log("EndOfMedia");
+                        console.log("EndOfMedia");
                         //dataPoints.errCode="Medya sonu"
                         videoArea.endOfMediaCounter= 1+videoArea.endOfMediaCounter
                         break;
                     case MediaPlayer.InvalidMedia:
-                        //console.log("InvalidMedia");
+                        console.log("InvalidMedia");
                         //dataPoints.errCode="Geçersiz Medya"
                         break;
                     case MediaPlayer.UnknownStatus:
                         //dataPoints.errCode="Bilinmeyen durum"
-                        //console.log("UnknownStatus");
+                        console.log("UnknownStatus");
                         break;
                 }
             }
@@ -404,7 +446,7 @@ Window {
 
             onSourceChanged: {
                 if(player.source == ""){
-
+                    console.log("boş video yolu")
                 }else{
                     dataPoints.logVideoPlay(folderModel.get(videoArea.mediaIndex,"fileName"));
                     player.play();
@@ -464,9 +506,10 @@ Window {
         onTriggered: {
             videoArea.mediaIndex=0
             player.source = folderModel.get(videoArea.mediaIndex,"filePath")
-            videoArea.mediaIndex=1
+            videoArea.mediawait = false
         }
     }
+
     property bool nextStationTag : false;
     Connections{
         target: dataPoints
@@ -480,6 +523,21 @@ Window {
         target: dataPoints
         onAnounceCurrentStation:{
            dataPoints.playSoundStations="file:///"+dataPoints.getPathAudio(dataPoints.currentStation);
+        }
+        onVehicleSpeedChanged:{
+            if(dataPoints.vehicleSpeed > 200){
+                speedText.text = ""
+                speedText.visible = false
+                iconSpeed.visible=false
+                speedkmhText.visible =false
+            }else{
+                 speedText.text = dataPoints.vehicleSpeed
+                 speedText.visible = true
+                 iconSpeed.visible=true
+                 speedkmhText.visible =true
+            }
+
+
         }
     }
     Connections{

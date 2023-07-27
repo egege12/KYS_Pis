@@ -291,6 +291,47 @@ Window {
                     nextStationText.text = "GELECEK DURAK : "+newStation;
                 }
             }
+            Image{
+                id:iconConnection
+                width:40
+                height:40
+                anchors.verticalCenter:parent.verticalCenter
+                anchors.right: parent.right
+                anchors.rightMargin: 30
+                source:"qrc:/img/connection_Lost.png"
+                fillMode: Image.PreserveAspectFit
+                mipmap:true
+            }
+            Image{
+                id:iconGPS
+                width:40
+                height:40
+                anchors.verticalCenter:parent.verticalCenter
+                anchors.right: iconConnection.left
+                anchors.rightMargin: 30
+                source:"qrc:/img/GPS_nOK.png"
+                fillMode: Image.PreserveAspectFit
+                mipmap:true
+            }
+            Image{
+                id:iconStation
+                width:40
+                height:40
+                anchors.verticalCenter:parent.verticalCenter
+                anchors.right: iconGPS.left
+                anchors.rightMargin: 30
+                source:"qrc:/img/stationInfo_nok.png"
+                fillMode: Image.PreserveAspectFit
+                mipmap:true
+                Component.onCompleted: {
+                    if(dataPoints.stateNoStationInfo){
+                        iconStation.source="qrc:/img/stationInfo_nok.png"
+                    }else{
+                        iconStation.source="qrc:/img/stationInfo_ok.png"
+                    }
+                }
+            }
+
         }
     }
     Timer {
@@ -342,32 +383,44 @@ Window {
             windowElement.stationID = dataPoints.confirmStationID
             windowElement.stationText = dataPoints.getStationName(windowElement.stationID)
         }
-    }
-    Connections{
-        target:dataPoints
         onConfirmStationIDChanged: {
             windowElement.stationID = dataPoints.confirmStationID
             windowElement.stationText = dataPoints.getStationName(windowElement.stationID)
         }
-    }
-    Connections{
-        target:dataPoints
+        onStateNetworkChanged:{
+            if(dataPoints.stateNetwork){
+                iconConnection.source="qrc:/img/connection_establish.png"
+            }else{
+                iconConnection.source="qrc:/img/connection_Lost.png"
+            }
+        }
+        onStateNoGpsInfoChanged:{
+            if(dataPoints.stateNoGpsInfo){
+                iconGPS.source="qrc:/img/GPS_nOK.png"
+            }else{
+                iconGPS.source="qrc:/img/GPS_OK.png"
+            }
+        }
+        onStateNoStationInfoChanged:{
+            if(dataPoints.stateNoStationInfo){
+                iconStation.source="qrc:/img/stationInfo_nok.png"
+            }else{
+                iconStation.source="qrc:/img/stationInfo_ok.png"
+            }
+        }
         onCurrentStationChanged:{
             currentStationText.update(dataPoints.getStationName(dataPoints.currentStation))
         }
-    }
-    Connections{
-        target:dataPoints
         onNextStationChanged:{
             nextStationText.update(dataPoints.getStationName(dataPoints.nextStation))
         }
-    }
-    Connections{
-        target:dataPoints
         onCurrentLineChanged:{
             currentDirectionNo.update(dataPoints.currentLine)
         }
     }
+
+
+
     MediaPlayer {
         id: playerSound
         onStatusChanged: {

@@ -613,6 +613,7 @@ void workerObject::readStations()
     }
 
     this->endPoints->setDataImported(stationsRead);
+    this->endPoints->setStateNoStationInfo(!stationsRead);
 
 }
 
@@ -810,6 +811,7 @@ bool workerObject::readJSON(bool useBackup)
     this->cycleCheckUpdate=false;
     this->busStopped= false;
     this->waitToStop= false;
+    this->endPoints->setStateNoStationInfo(true);
 
     if(useBackup){
         this->endPoints->setErrCode("-readJSON- Yedek veri kullanılacak.");
@@ -1100,6 +1102,11 @@ void workerObject::rwComApp()
                     this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> ProgressUpdate bulunamadı.");
                 }
             }else{
+                this->endPoints->iiCom.GPSOk = false;
+                this->endPoints->iiCom.GPSLongtitude = 0;
+                this->endPoints->iiCom.GPSLatitude = 0;
+                this->endPoints->iiCom.VehicleSpeed = 9999;
+                this->endPoints->iiCom.AnyDoorOpen = false;
                 if(this->endPoints->comAppOK()){
                     this->endPoints->setErrCode("-rwComApp- LifeSign değişmiyor,APP ile haberleşme hatası");
                 }
@@ -1183,7 +1190,7 @@ void workerObject::cycleCall()
     this->endPoints->ioCom.ActiveCommercial=this->endPoints->activeCommercial();
     //Use communication parameters
     mainPIS();
-
+    checkConnection();
 
     //Cycle operation check
     if(cycleCheckRead){
@@ -1258,6 +1265,7 @@ void workerObject::updateList()
         }else{
             emit this->endPoints->updateFailed();
         }
+        this->endPoints->setStateNoStationInfo(!updateComplete);
         this->endPoints->setDataImported(updateComplete);
         readVideoFolder();
     }

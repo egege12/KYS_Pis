@@ -32,5 +32,12 @@
         <file>plus.png</file>
         <file>nicetrip_1.png</file>
         <file>logoScreenSaver_kys.png</file>
+        <file>connection_establish.png</file>
+        <file>connection_Lost.png</file>
+        <file>GPS_nOK.png</file>
+        <file>GPS_OK.png</file>
+        <file>stationInfo_nok.png</file>
+        <file>stationInfo_ok.png</file>
+        <file>iconSpeed.png</file>
     </qresource>
 </RCC>
