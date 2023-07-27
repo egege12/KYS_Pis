@@ -12,7 +12,7 @@ Rectangle {
     property color disabledColor : "#9e9b9b"
     property color pressedColor : "#575757"
     property color releasedColor : "#707070"
-    property color hoveredColor : "#4A4A4A"
+    property color hoveredColor : "#575757"
     property real imageRatio : 0.8
     property string buttonText: ""
     property real size : 12
@@ -57,7 +57,7 @@ Rectangle {
             parent.disableButtonClick ? undefined : parent.buttonReleased()
         }
         onClicked: parent.disableButtonClick ? undefined: parent.buttonClicked()
-        hoverEnabled: true
+        hoverEnabled: false
         onEntered: {parent.color = parent.hoveredColor; parent.buttonEntered()}
         onExited: {parent.color = parent.releasedColor; parent.buttonExited()}
 

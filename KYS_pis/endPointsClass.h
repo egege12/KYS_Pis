@@ -52,9 +52,15 @@ class endPointsClass: public QObject{
     Q_PROPERTY(bool anyDoorOpen READ anyDoorOpen WRITE setAnyDoorOpen NOTIFY anyDoorOpenChanged)
     Q_PROPERTY(bool updateInProgress READ updateInProgress WRITE setUpdateInProgress NOTIFY updateInProgressChanged)
     Q_PROPERTY(QString vehicleID READ vehicleID WRITE setVehicleID NOTIFY vehicleIDChanged)
+
+    Q_PROPERTY(QString activeCommercial READ activeCommercial WRITE setActiveCommercial NOTIFY activeCommercialChanged)
+    Q_PROPERTY(QString activeAnounce READ activeAnounce WRITE setActiveAnounce NOTIFY activeAnounceChanged)
+
+
     Q_PROPERTY(QString playSound READ playSound WRITE setPlaySound NOTIFY playSoundChanged)
     Q_PROPERTY(QString playSoundStations READ playSoundStations WRITE setPlaySoundStations NOTIFY playSoundStationsChanged)
     Q_PROPERTY(bool pauseAnounce READ pauseAnounce WRITE setPauseAnounce NOTIFY pauseAnounceChanged)
+    Q_PROPERTY(QString periodOfAnounce READ periodOfAnounce WRITE setPeriodOfAnounce NOTIFY periodOfAnounceChanged)
 public:
     struct IIData{
         unsigned VehicleID;
@@ -200,6 +206,15 @@ public:
     QString playSoundStations() const;
     void setPlaySoundStations(const QString &newPlaySoundStations);
 
+    QString periodOfAnounce() const;
+    void setPeriodOfAnounce(const QString &newPeriodOfAnounce);
+
+    QString activeCommercial() const;
+    void setActiveCommercial(const QString &newActiveCommercial);
+
+    QString activeAnounce() const;
+    void setActiveAnounce(const QString &newActiveAnounce);
+
 signals:
     void stateNoFolderFoundChanged();
 
@@ -244,6 +259,7 @@ signals:
     void comAppOKChanged();
 
     void updateSuccesfull();
+
     void updateFailed();
 
     /*application Signals*/
@@ -252,7 +268,9 @@ signals:
     void anounceNextStation();
 
     void loadViewFour();
+
     void updateViewFour();
+
     void confirmPopup();
 
     void currentStationOrderChanged();
@@ -281,7 +299,14 @@ signals:
 
     void playSoundStationsChanged();
 
+    void periodOfAnounceChanged();
+
+    void activeCommercialChanged();
+
+    void activeAnounceChanged();
+
 public slots:
+    void clearList();
     /*Application functions*/
     QList<QString> getLineList();
     QList<QString> getStations();
@@ -296,6 +321,7 @@ public slots:
 
     /*Video*/
     void logVideoPlay(QString mediaId);
+    void logMediaPlay(QString mediaName);
     void setVideoUnavailable();
     void setVideoAvailable();
 
@@ -340,6 +366,9 @@ private:
     QString m_playSound;
     bool m_pauseAnounce;
     QString m_playSoundStations;
+    QString m_periodOfAnounce;
+    QString m_activeCommercial;
+    QString m_activeAnounce;
 };
 struct  endPointsClass::station{
     QString id;
@@ -400,6 +429,7 @@ inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
      m_actualLatitude="null";
      m_comAppOK=false;
      viewLine="null";
+     setPeriodOfAnounce("Günde 1");
 }
 
 inline endPointsClass::~endPointsClass()
@@ -439,7 +469,7 @@ inline void endPointsClass::selectviewLine(QString lineID)
 
 inline void endPointsClass::selectLine()/*Called on button pressed at line page "StationSelect.qml"*/
 {
-    qDebug()<<"selectLine çağırıldı ";
+    //qDebug()<<"selectLine çağırıldı ";
     setLineSelected(false);
     this->setSelectionDone(false);
     this->selectedLine = this->viewLine;
@@ -451,7 +481,7 @@ inline void endPointsClass::selectLine()/*Called on button pressed at line page 
 }
 
 inline void endPointsClass::getConfirmationCurrentStation(QString currentStationID)
-{   qDebug()<<"getConfirmationCurrentStation çağırıldı ";
+{   //qDebug()<<"getConfirmationCurrentStation çağırıldı ";
     setConfirmStationID(currentStationID);
     emit confirmPopup();
 }
@@ -524,8 +554,21 @@ inline void endPointsClass::logVideoPlay(QString mediaId)
 {
     for (const videos& video : this->videoList) {
         if(video.id==mediaId){
-            this->setErrCode(video.description+" isimli medya oynatılıyor");
+            QString text= video.description;
+            this->setErrCode(text.remove("\"")+" isimli medya oynatılıyor");
+            setActiveCommercial(text.remove("\""));
         }
+        //qDebug()<<video.description;
+    }
+
+}
+
+inline void endPointsClass::logMediaPlay(QString mediaName)
+{
+    QString data = mediaName.split("/").last().remove(".mp3");
+    if(!data.isEmpty()){
+        this->setErrCode(data+" isimli ses dosyası oynatıldı.");
+        setActiveCommercial(data);
     }
 
 }
@@ -533,11 +576,13 @@ inline void endPointsClass::logVideoPlay(QString mediaId)
 inline void endPointsClass::setVideoUnavailable()
 {
     setStateDispWatchOnVideoArea(true);
+
 }
 
 inline void endPointsClass::setVideoAvailable()
 {
     setStateDispWatchOnVideoArea(false);
+
 }
 
 inline QString endPointsClass::getViewFourMember(unsigned int index)
@@ -554,7 +599,7 @@ inline QString endPointsClass::getPathAudio(QString stationID)
 {
     for(endPointsClass::station Obj : this->currentLineStations){
         if(Obj.id == stationID){
-            qDebug()<<"bulduummmmmmmmmmmmmmmmmmmm";
+            //qDebug()<<"found getPathAudio";
             return Obj.soundURL;
         }
     }
@@ -600,6 +645,12 @@ inline bool endPointsClass::stateDispWatchOnVideoArea() const
 
 inline void endPointsClass::setStateDispWatchOnVideoArea(bool newStateDispWatchOnVideoArea)
 {
+    if (m_stateDispWatchOnVideoArea && !newStateDispWatchOnVideoArea){
+        this->setErrCode("Medya gösterimi mümkün. Ekran koruyucu kapatılıyor.");
+    }
+    if (m_stateDispWatchOnVideoArea && !newStateDispWatchOnVideoArea){
+        this->setErrCode("Medya gösterimi mümkün değil. Ekran koruyucu açılıyor.");
+    }
     if (m_stateDispWatchOnVideoArea == newStateDispWatchOnVideoArea)
         return;
     m_stateDispWatchOnVideoArea = newStateDispWatchOnVideoArea;
@@ -1006,4 +1057,101 @@ inline void endPointsClass::setPlaySoundStations(const QString &newPlaySoundStat
     emit playSoundStationsChanged();
 }
 
+
+
+inline QString endPointsClass::periodOfAnounce() const
+{
+    return m_periodOfAnounce;
+}
+
+inline void endPointsClass::setPeriodOfAnounce(const QString &newPeriodOfAnounce)
+{
+    if (m_periodOfAnounce == newPeriodOfAnounce)
+        return;
+    m_periodOfAnounce = newPeriodOfAnounce;
+    emit periodOfAnounceChanged();
+}
+
+inline void endPointsClass::clearList()
+{
+    QMap<QString, QList<station*>>::iterator it = allLineStations.begin();
+    while (it != allLineStations.end()) {
+        // Her bir QList içindeki elemanları sil
+        QList<station*> &stations = it.value();
+        qDeleteAll(stations);
+        stations.clear();
+        // QMap içindeki anahtar-değer çiftini sil
+        it = allLineStations.erase(it);
+    }
+    this->viewLine.clear();
+    this->currentViewFour.clear();
+    ioCom.VehicleID =0;
+    ioCom.ActiveAnounce="Aktif Degil";
+    ioCom.ActiveCommercial="Aktif Degil";
+    ioCom.ActiveLineInfo= 0;
+    ioCom.LifeSign=0;
+    ioCom.ActiveStation="Yok";
+    ioCom.NextStationId=0;
+    ioCom.ActiveStationId=0;
+    ioCom.ActiveDirection=0;
+    ioCom.NextStation="";
+    iiCom.VehicleID=0;
+    iiCom.LifeSign=0;
+    iiCom.GPSOk=false;
+    iiCom.GPSLongtitude=0;
+    iiCom.GPSLatitude=0;
+    iiCom.VehicleSpeed=0;
+    iiCom.AnyDoorOpen=false;
+    iiCom.ProgressUpdate=false;
+
+    m_stateNoFolderFound=false;
+    m_stateDispWatchOnVideoArea=false;
+    m_stateDispTextOnStationArea=false;
+    m_stateSpecialAnounceActive=false;
+    m_stateRegularAnounceActive=false;
+    m_stateNoGpsInfo=false;
+    m_stateNoStationInfo=false;
+    m_errCode="null";
+    m_updateStations=false;
+    m_stateNetwork=false;
+    m_currentLine="null";
+    m_currentStation="null";
+    m_currentSpecialAnounce="null";
+    m_nextStation="null";
+    m_lineSelected=false;
+    m_dataImported=false;
+    m_folderStructureOK=false;
+    m_actualLongitude="null";
+    m_actualLatitude="null";
+    m_comAppOK=false;
+    viewLine="null";
+    setPeriodOfAnounce("Günde 1");
+}
+
+
+inline QString endPointsClass::activeCommercial() const
+{
+    return m_activeCommercial;
+}
+
+inline void endPointsClass::setActiveCommercial(const QString &newActiveCommercial)
+{
+    if (m_activeCommercial == newActiveCommercial)
+        return;
+    m_activeCommercial = newActiveCommercial;
+    emit activeCommercialChanged();
+}
+
+inline QString endPointsClass::activeAnounce() const
+{
+    return m_activeAnounce;
+}
+
+inline void endPointsClass::setActiveAnounce(const QString &newActiveAnounce)
+{
+    if (m_activeAnounce == newActiveAnounce)
+        return;
+    m_activeAnounce = newActiveAnounce;
+    emit activeAnounceChanged();
+}
 #endif // ENDPOINTSCLASS_H

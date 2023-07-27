@@ -59,7 +59,7 @@ public:
     bool checkFileLines();
     bool checkFileJson();
     void readVideoFolder();
-    void checkAuidioFolder();
+    void checkAudioFolder();
 
     //If one fails cycle check starts for that
     /*CYCLE OPERATIONS*/void enableCycleCheckUpdate(bool cycleCheckUpdate);

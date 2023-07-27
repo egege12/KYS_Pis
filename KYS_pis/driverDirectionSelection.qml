@@ -24,99 +24,122 @@ Item {
 
                 }
             }
+            MenuButton {
+                id : buttonUpdate
+                anchors.right:parent.right
+                anchors.rightMargin:20;
+                anchors.bottom:parent.bottom
+                anchors.bottomMargin:20;
+                width:100
+                height:40
+                radius: 0.5
+                imageRatio: 1
+                disableButtonClick: false
+                buttonText: "GÜNCELLE"
+                onButtonClicked:{
+                    dataPoints.updateStations=true;
+                }
+                z:3
+            }
 
-            Rectangle {
+            ScrollView {
                 id: linesArea
-                width: parent.width-buttonBack.width
-                anchors.top:parent.top
+                anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                anchors.left : buttonBack.right
-                anchors.leftMargin: 20;
-                color:"transparent"
+                anchors.left: buttonBack.right
+                anchors.leftMargin:5
+                anchors.right: parent.right
+                clip: true
+                ScrollBar.vertical.interactive: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                Grid{
+                    id:grid
+                    columns: 7
+                    spacing: 5
+
                 property bool dataImported: false
+                property var createdBoxes: [] // Kutu nesnelerini tutacak dizi
 
-                // dataImportedChanged sinyali gözlemlemek için signalhandler
-                Connections {
-                    target: dataPoints
-                    onDataImportedChanged: {
-                        dataImported = dataPoints.dataImported
-                        if (dataImported) {
-                            createBoxes()
-                        }
+
+                function clearBoxes() {
+                    for (var i = 0; i < createdBoxes.length; i++) {
+                        createdBoxes[i].destroy() // Oluşturulmuş kutuları yok et
                     }
+                    createdBoxes = [] // Diziyi boşalt
                 }
-                Component.onCompleted: {
-                    dataImported = dataPoints.dataImported
-                    if (dataImported) {
-                        createBoxes()
-                    }
-                }
-
-
 
                 function createBoxes() {
-                        // dataPoints.getLineList() yönteminden hat numaralarını al
-                        var lines = dataPoints.getLineList()
+                    // dataPoints.getLineList() yönteminden hat numaralarını al
+                    var lines = dataPoints.getLineList()
 
-                        // Hat numaralarını 10'arlı gruplar halinde bölen bir fonksiyon
-                        function chunkArray(arr, size) {
-                            var chunkedArr = []
-                            for (var i = 0; i < arr.length; i += size) {
-                                chunkedArr.push(arr.slice(i, i + size))
-                            }
-                            return chunkedArr
+                    // Hat numaralarını 2'şerli gruplar halinde bölen bir fonksiyon
+                    function chunkArray(arr, size) {
+                        var chunkedArr = []
+                        for (var i = 0; i < arr.length; i += size) {
+                            chunkedArr.push(arr.slice(i, i + size))
                         }
+                        return chunkedArr
+                    }
 
-                        var lineChunks = chunkArray(lines, 6)
 
-                        // Kutu oluşturma fonksiyonu
-                        function createBox(x, y, text) {
-                            var component = Qt.createComponent("MenuButton.qml")
-                            if (component.status === Component.Ready) {
-                                var button = component.createObject(linesArea, {
-                                    "x": x,
-                                    "y": y,
-                                    "buttonText": text,
-                                    "width": 100,
-                                    "height": 40,
-                                    "disableButtonClick": false,
-                                    "size" : 18,
-                                    "radius:" :1.0
-                                })
-                                if (button === null) {
-                                    console.log("Error creating button")
-                                }else{
-                                    button.buttonClicked.connect(function(){
-                                        dataPoints.selectviewLine(text);
-                                        stack.push("qrc:/StationSelect.qml");
-                                    }
-                                        )
-                                }
+
+                    // Kutu oluşturma fonksiyonu
+                    function createBox(text) {
+                        var component = Qt.createComponent("MenuButton.qml")
+                        if (component.status === Component.Ready) {
+                            var button = component.createObject(grid, {
+                                "buttonText": text,
+                                "width": 100,
+                                "height": 40,
+                                "disableButtonClick": false,
+                                "size": 18,
+                                "radius": 1.0
+                            })
+                            if (button === null) {
+                                console.log("Error creating button")
                             } else {
-                                console.log("Error loading MenuButton.qml")
+                                button.buttonClicked.connect(function () {
+                                    dataPoints.selectviewLine(text);
+                                    stack.push("qrc:/StationSelect.qml");
+                                })
+                                createdBoxes.push(button) // Oluşturulan kutuyu dizide sakla
                             }
-                        }
-
-                        // 10 adet kutuyu oluştur
-                        var xPosition = 0
-                        var yPosition = 0
-                        var spacing = 20
-
-                        for (var i = 0; i < lineChunks.length; i++) {
-                            var chunk = lineChunks[i]
-
-                            for (var j = 0; j < chunk.length; j++) {
-                                createBox(xPosition, yPosition, chunk[j])
-                                xPosition += 100 + spacing
-                            }
-
-                            xPosition = 0
-                            yPosition += 40 + spacing
+                        } else {
+                            console.log("Error loading MenuButton.qml")
                         }
                     }
+                    var lineChunks = lines;
+                    // Kutuların düzenlenmesi
+                    var xPosition = 0
+                    var yPosition = 0
+                    var spacingX = 20
+                    var spacingY = 20
+
+
+                        for (var j = 0; j < lineChunks.length; j++) {
+                            createBox(lineChunks[j])
+                        }
+
+                }
+            }
             }
 
 
+            Connections {
+                target: dataPoints
+                onDataImportedChanged: {
+                    driverDirectionRectangle.checkIfDataImported();
+                }
+            }
+            Component.onCompleted: {
+                driverDirectionRectangle.checkIfDataImported();
+            }
+            function checkIfDataImported(){
+                if (dataPoints.dataImported) {
+                    grid.clearBoxes()
+                    grid.createBoxes()
+                }
+            }
     }
 
 }

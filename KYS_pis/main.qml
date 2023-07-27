@@ -14,6 +14,16 @@ Window {
     Component.onCompleted: {
         x= Qt.application.screens[1].virtualX;
         y= Qt.application.screens[1].virtualY;
+
+        if(dataPoints.stateDispTextOnStationArea){
+            rightSide.visible=false;
+            rightSideScreenSaver.visible=true;
+            console.log(rightSide.width+" "+rightSide.height);
+        }else{
+            rightSide.visible=true;
+            rightSideScreenSaver.visible=false;
+            console.log("visible true");
+        }
     }
     flags: Qt.FramelessWindowHint | Qt.Window | Qt.MaximizeUsingFullscreenGeometryHint
     Loader {
@@ -39,6 +49,7 @@ Window {
             mipmap:true
             z:0
         }
+
 
         Rectangle{
             id:leftSide
@@ -134,12 +145,31 @@ Window {
 
         }
         Rectangle{
+            id:rightSideScreenSaver
+            anchors.left: leftSide.right
+            anchors.right:parent.right
+            anchors.top:parent.top
+            anchors.bottom:parent.bottom
+            color:"transparent"
+            Image{
+                id:imageScreenSaver
+                anchors.fill: parent
+                antialiasing: true
+                source: "qrc:/img/logoScreenSaver_kys.png"
+                opacity: 1.0
+                fillMode:Image.PreserveAspectFit
+            }
+        }
+
+        Rectangle{
             id:rightSide
             anchors.left: leftSide.right
             anchors.right:parent.right
             anchors.top:parent.top
             anchors.bottom:parent.bottom
             color:"transparent"
+
+
             Rectangle{
                      id:highlightedArea
                      anchors.left: parent.left
@@ -177,11 +207,15 @@ Window {
                          spacing:48
                          delegate:
                              Rectangle{
+                                 id:delegateRect
                                  width:highlightedArea.width
                                  height:highlightedArea.height / 6
                                  color:"transparent"
-
+                                 function update(){
+                                        text.color = (duraklar.get(0).name === name) ? ((root.pulse === true) ? "gray" : "cyan") : (duraklar.get(0).name === name) ? "gray" : "black";
+                                 }
                                  Text {
+                                             id:text
                                              text: name
                                              font.capitalization: Font.AllUppercase
                                              anchors.fill: parent
@@ -294,7 +328,8 @@ Window {
                 videoStarter.start();
             }
         }
-
+        property bool mediaError : false;
+        property int endOfMediaCounter : 0;
         MediaPlayer {
             id: player
             muted: true
@@ -311,8 +346,10 @@ Window {
                 }
 
             }
+
+
             function check(){
-                if(player.status === MediaPlayer.NoMedia){
+                if((player.status === MediaPlayer.NoMedia) || (player.status ===MediaPlayer.InvalidMedia) ||(videoArea.endOfMediaCounter>4)||(player.error !== MediaPlayer.NoError)|| (player.status ===MediaPlayer.UnknownStatus) || (player.status ===MediaPlayer.Stalled)){
                     dataPoints.setVideoUnavailable();
                     folderModel.update();
                 }else{
@@ -321,40 +358,59 @@ Window {
                 switch (player.status) {
                     case MediaPlayer.NoMedia:
                         //console.log("NoMedia");
+                        //dataPoints.errCode="Medya yok"
+                        videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.Loading:
                         //console.log("Loading");
+                        //dataPoints.errCode="yükleniyor."
+                        videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.Loaded:
                         //console.log("Loaded");
+                        //dataPoints.errCode="yüklendi."
+                        videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.Buffering:
                         //console.log("Buffering");
+                        //dataPoints.errCode="Stoklanıyor"
+                        videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.Stalled:
                         //console.log("Stalled");
+                        //dataPoints.errCode="Video çöktü"
                         break;
                     case MediaPlayer.Buffered:
                         //console.log("Buffered");
+                        //dataPoints.errCode="Buffer yapıldı"
+                        videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.EndOfMedia:
                         //console.log("EndOfMedia");
+                        //dataPoints.errCode="Medya sonu"
+                        videoArea.endOfMediaCounter= 1+videoArea.endOfMediaCounter
                         break;
                     case MediaPlayer.InvalidMedia:
                         //console.log("InvalidMedia");
+                        //dataPoints.errCode="Geçersiz Medya"
                         break;
                     case MediaPlayer.UnknownStatus:
+                        //dataPoints.errCode="Bilinmeyen durum"
                         //console.log("UnknownStatus");
                         break;
                 }
             }
 
-            onPlaying: {
-                dataPoints.logVideoPlay(folderModel.get(videoArea.mediaIndex,"fileName"));
-            }
 
             onSourceChanged: {
-                player.play();
+                if(player.source == ""){
+
+                }else{
+                    dataPoints.logVideoPlay(folderModel.get(videoArea.mediaIndex,"fileName"));
+                    player.play();
+                }
+
+
 
             }
 
@@ -452,10 +508,23 @@ Window {
         onUpdateViewFour:{
             duraklar.remove(0,1);
             duraklar.append({"name": dataPoints.getViewFourMember(3)});
-
+            delegateRect.update();
         }
     }
-
+    Connections{
+        target:dataPoints
+        onStateDispTextOnStationAreaChanged:{
+            if(dataPoints.stateDispTextOnStationArea){
+                rightSide.visible=false;
+                rightSideScreenSaver.visible=true;
+                console.log(rightSide.width+" "+rightSide.height);
+            }else{
+                rightSide.visible=true;
+                rightSideScreenSaver.visible=false;
+                console.log("visible true");
+            }
+        }
+    }
 
 
 }

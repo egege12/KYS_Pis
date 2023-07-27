@@ -392,6 +392,7 @@ Window {
                     break;
                 case MediaPlayer.EndOfMedia:
                     playerSound.source="";
+                    dataPoints.playSound="";
                     audioPaused=false;
                     break;
                 case MediaPlayer.InvalidMedia:
@@ -404,8 +405,10 @@ Window {
         }
         onSourceChanged: {
             if(!audioPaused){
-                if(playerSound.source !=="")
+                if(playerSound.source !==""){
                     playerSound.play();
+                    dataPoints.logMediaPlay(playerSound.source)
+                }
             }
         }
 
