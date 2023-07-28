@@ -35,7 +35,7 @@ class endPointsClass: public QObject{
     Q_PROPERTY(QString currentLine READ currentLine WRITE setCurrentLine NOTIFY currentLineChanged)
     Q_PROPERTY(QString currentStation READ currentStation WRITE setCurrentStation NOTIFY currentStationChanged)
     Q_PROPERTY(QString nextStation READ nextStation WRITE setNextStation NOTIFY nextStationChanged)
-
+    Q_PROPERTY(unsigned lifeSign READ lifeSign WRITE setLifeSign NOTIFY lifeSignChanged)
     Q_PROPERTY(QString currentSpecialAnounce READ currentSpecialAnounce WRITE setCurrentSpecialAnounce NOTIFY currentSpecialAnounceChanged)
     Q_PROPERTY(unsigned currentStationOrder READ currentStationOrder WRITE setCurrentStationOrder NOTIFY currentStationOrderChanged)
     Q_PROPERTY(bool stateSpecialAnounceActive READ stateSpecialAnounceActive WRITE setStateSpecialAnounceActive NOTIFY stateSpecialAnounceActiveChanged)
@@ -68,7 +68,7 @@ public:
         bool GPSOk;
         double GPSLongtitude;
         double GPSLatitude;
-        unsigned VehicleSpeed;
+        double VehicleSpeed;
         bool AnyDoorOpen;
         bool ProgressUpdate;
     };
@@ -215,6 +215,9 @@ public:
     QString activeAnounce() const;
     void setActiveAnounce(const QString &newActiveAnounce);
 
+    unsigned int lifeSign() const;
+    void setLifeSign(unsigned int newLifeSign);
+
 signals:
     void stateNoFolderFoundChanged();
 
@@ -305,6 +308,8 @@ signals:
 
     void activeAnounceChanged();
 
+    void lifeSignChanged();
+
 public slots:
     void clearList();
     /*Application functions*/
@@ -369,6 +374,7 @@ private:
     QString m_periodOfAnounce;
     QString m_activeCommercial;
     QString m_activeAnounce;
+    unsigned int m_lifeSign;
 };
 struct  endPointsClass::station{
     QString id;
@@ -1043,7 +1049,6 @@ inline void endPointsClass::setPauseAnounce(bool newPauseAnounce)
 }
 
 
-
 inline QString endPointsClass::playSoundStations() const
 {
     return m_playSoundStations;
@@ -1051,13 +1056,9 @@ inline QString endPointsClass::playSoundStations() const
 
 inline void endPointsClass::setPlaySoundStations(const QString &newPlaySoundStations)
 {
-    if (m_playSoundStations == newPlaySoundStations)
-        return;
-    m_playSoundStations = newPlaySoundStations;
+    m_playSoundStations = newPlaySoundStations ;
     emit playSoundStationsChanged();
 }
-
-
 
 inline QString endPointsClass::periodOfAnounce() const
 {
@@ -1154,4 +1155,19 @@ inline void endPointsClass::setActiveAnounce(const QString &newActiveAnounce)
     m_activeAnounce = newActiveAnounce;
     emit activeAnounceChanged();
 }
+
+
+inline unsigned int endPointsClass::lifeSign() const
+{
+    return m_lifeSign;
+}
+
+inline void endPointsClass::setLifeSign(unsigned int newLifeSign)
+{
+    if (m_lifeSign == newLifeSign)
+        return;
+    m_lifeSign = newLifeSign;
+    emit lifeSignChanged();
+}
+
 #endif // ENDPOINTSCLASS_H

@@ -301,6 +301,13 @@ Window {
                 source:"qrc:/img/connection_Lost.png"
                 fillMode: Image.PreserveAspectFit
                 mipmap:true
+                Component.onCompleted: {
+                    if(dataPoints.stateNetwork){
+                        iconConnection.source="qrc:/img/connection_establish.png"
+                    }else{
+                        iconConnection.source="qrc:/img/connection_Lost.png"
+                    }
+                }
             }
             Image{
                 id:iconGPS
@@ -312,6 +319,13 @@ Window {
                 source:"qrc:/img/GPS_nOK.png"
                 fillMode: Image.PreserveAspectFit
                 mipmap:true
+                Component.onCompleted: {
+                    if(dataPoints.stateNoGpsInfo){
+                        iconGPS.source="qrc:/img/GPS_nOK.png"
+                    }else{
+                        iconGPS.source="qrc:/img/GPS_OK.png"
+                    }
+                }
             }
             Image{
                 id:iconStation
@@ -328,6 +342,24 @@ Window {
                         iconStation.source="qrc:/img/stationInfo_nok.png"
                     }else{
                         iconStation.source="qrc:/img/stationInfo_ok.png"
+                    }
+                }
+            }
+            Image{
+                id:iconappCom
+                width:40
+                height:40
+                anchors.verticalCenter:parent.verticalCenter
+                anchors.right: iconStation.left
+                anchors.rightMargin: 30
+                source:"qrc:/img/comnOk.png"
+                fillMode: Image.PreserveAspectFit
+                mipmap:true
+                Component.onCompleted: {
+                    if(dataPoints.comAppOK){
+                        iconappCom.source="qrc:/img/comOk.png"
+                    }else{
+                        iconappCom.source="qrc:/img/comnOk.png"
                     }
                 }
             }
@@ -416,6 +448,13 @@ Window {
         }
         onCurrentLineChanged:{
             currentDirectionNo.update(dataPoints.currentLine)
+        }
+        onComAppOKChanged:{
+            if(dataPoints.comAppOK){
+                iconappCom.source="qrc:/img/comOk.png"
+            }else{
+                iconappCom.source="qrc:/img/comnOk.png"
+            }
         }
     }
 

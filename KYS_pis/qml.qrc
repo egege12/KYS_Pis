@@ -39,5 +39,7 @@
         <file>stationInfo_nok.png</file>
         <file>stationInfo_ok.png</file>
         <file>iconSpeed.png</file>
+        <file>comnOk.png</file>
+        <file>comOk.png</file>
     </qresource>
 </RCC>

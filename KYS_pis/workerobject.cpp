@@ -21,8 +21,8 @@
 #define LOG_SAVE_COUNTER 10
 #define MIN_LOG_DEL_SIZE 104857600
 #define MAX_LOG_SIZE 1073741824
-#define DISTANCE_LEAVE_CURRENT_STATION 50.0 /*METER*/
-#define DISTANCE_APRROACH_CURRENT_STATION 70.0 /*METER*/
+#define DISTANCE_LEAVE_CURRENT_STATION 30.0 /*METER*/
+#define DISTANCE_APRROACH_CURRENT_STATION 40.0 /*METER*/
 
 
 workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
@@ -104,6 +104,7 @@ loop1.exec();
 
 void workerObject::checkLifeSign(unsigned int oldLifeSign, unsigned int newLifeSign)
 {
+    this->endPoints->setLifeSign(newLifeSign);
     if(oldLifeSign !=newLifeSign){
         this->failCounterLifeSign = 0;
     }else{
@@ -126,7 +127,7 @@ bool workerObject::checkGPS()
         }else{
             ++this->failGPSCounter;
         }
-        if((failGPSCounter>20) && this->endPoints->iiCom.VehicleSpeed>5){
+        if((failGPSCounter>1000) && this->endPoints->iiCom.VehicleSpeed>5){
             return false;
         }else{
             return true;
@@ -1058,6 +1059,7 @@ void workerObject::rwComApp()
                 this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> LifeSign bulunamadı.");
             }
             bool comOK = this->failCounterLifeSign < 6;
+            this->endPoints->setComAppOK(comOK);
             if(comOK){
                 if(IIDataObj.contains("VehicleID")){
                     this->endPoints->iiCom.VehicleID = IIDataObj["VehicleID"].toInt();
@@ -1084,7 +1086,7 @@ void workerObject::rwComApp()
                     this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> GPSLatitude bulunamadı.");
                 }
                 if(IIDataObj.contains("VehicleSpeed")){
-                    this->endPoints->iiCom.VehicleSpeed = IIDataObj["VehicleSpeed"].toInt();
+                    this->endPoints->iiCom.VehicleSpeed = IIDataObj["VehicleSpeed"].toDouble();
                     //qDebug()<<"VehicleSpeed"<<this->endPoints->iiCom.VehicleSpeed ;
                 }else{
                     this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> VehicleSpeed bulunamadı.");
@@ -1111,7 +1113,7 @@ void workerObject::rwComApp()
                     this->endPoints->setErrCode("-rwComApp- LifeSign değişmiyor,APP ile haberleşme hatası");
                 }
             }
-            this->endPoints->setComAppOK(comOK);
+
         }
 
 
@@ -1177,7 +1179,7 @@ void workerObject::cycleCall()
     this->endPoints->setStateNoGpsInfo(!checkGPS());
     this->endPoints->setactualLatitude(QString::number(this->endPoints->iiCom.GPSLatitude));
     this->endPoints->setactualLongitude(QString::number(this->endPoints->iiCom.GPSLongtitude));
-    this->endPoints->setVehicleSpeed((QString::number(this->endPoints->iiCom.VehicleSpeed)));
+    this->endPoints->setVehicleSpeed(QString::number(this->endPoints->iiCom.VehicleSpeed, 'f', 0));
     this->endPoints->setVehicleID((QString::number(this->endPoints->iiCom.VehicleID)));
     this->endPoints->setAnyDoorOpen(this->endPoints->iiCom.AnyDoorOpen);
         //Outputs
@@ -1326,7 +1328,7 @@ double workerObject::calculateDistance(double lat1, double lon1, double lat2, do
 void workerObject::mainPIS()
 {
     QString selected = this->endPoints->selectedLine.replace("->","_");
-    busStopped = (this->endPoints->vehicleSpeed().toDouble() < 3.0);
+    busStopped = (this->endPoints->vehicleSpeed().toDouble() < 5.0);
     //qDebug()<<this->endPoints->selectionDone()+this->endPoints->stateDispTextOnStationArea();
     if(!this->endPoints->stateNoGpsInfo()){
         if(this->endPoints->selectionDone()){
@@ -1337,8 +1339,8 @@ void workerObject::mainPIS()
             if(this->inStation){
                  //qDebug()<<"istasyondayım";
                     if(!busStopped && (DISTANCE_LEAVE_CURRENT_STATION < this->calculateDistance(currentStationLatitude,currentStationLongitude,this->endPoints->actualLatitude().toDouble(),this->endPoints->actualLongitude().toDouble()))){
-                    emit this->endPoints->anounceNextStation();
                     inStation = false;
+                    waitToStop = false;
                     this->endPoints->currentLineStations[this->endPoints->currentStationOrder()].passed = true;
                     if(this->endPoints->currentStationOrder()+1<this->endPoints->currentLineStations.size()){
                             this->endPoints->setCurrentStationOrder(this->endPoints->currentStationOrder()+1);
@@ -1357,47 +1359,48 @@ void workerObject::mainPIS()
                             this->endPoints->currentViewFour.append("");
                     }
                     emit this->endPoints->updateViewFour();
+                    emit this->endPoints->anounceNextStation();
                      //qDebug()<<"duraktan ayrılış";
                 }
             }else{
                  //qDebug()<<"istasyonda değilim";
-                    if(DISTANCE_APRROACH_CURRENT_STATION > this->calculateDistance(currentStationLatitude,currentStationLongitude,this->endPoints->actualLatitude().toDouble(),this->endPoints->actualLongitude().toDouble())){
-                        if(busStopped && waitToStop){
-                                emit this->endPoints->anounceCurrentStation();
-                                 //qDebug()<<"ikinci anonsu istedim";
-                                inStation = true;
-                                waitToStop= false;
-                        }else if(!waitToStop){
-                                emit this->endPoints->anounceNextStation();
-                                waitToStop=true;
-                                 //qDebug()<<"ilk anonsu istedim";
-                        }else{
-                             //qDebug()<<"boştayım";
-                        }
-                    }else if (waitToStop && DISTANCE_LEAVE_CURRENT_STATION < this->calculateDistance(currentStationLatitude,currentStationLongitude,this->endPoints->actualLatitude().toDouble(),this->endPoints->actualLongitude().toDouble())){
-                        waitToStop = false;
-                        emit this->endPoints->anounceNextStation();
-                        inStation = false;
-                        this->endPoints->currentLineStations[this->endPoints->currentStationOrder()].passed = true;
-                        if(this->endPoints->currentStationOrder()+1<this->endPoints->currentLineStations.size()){
-                            this->endPoints->setCurrentStationOrder(this->endPoints->currentStationOrder()+1);
-                        }else{
-                            this->endPoints->setCurrentStationOrder(this->endPoints->currentStationOrder());
-                        }
-                        this->endPoints->setCurrentStation(this->endPoints->nextStation());
-                        this->endPoints->currentViewFour.pop_front();
-                        if(this->endPoints->currentStationOrder()+1<this->endPoints->currentLineStations.size()){
-                            this->endPoints->setNextStation(this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()+1).id);
-                            if(this->endPoints->currentStationOrder()+3<this->endPoints->currentLineStations.size()){
-                                this->endPoints->currentViewFour.append(this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()+3).name);
-                            }
-                        }else{
-                            this->endPoints->setNextStation("0");
-                            this->endPoints->currentViewFour.append("");
-                        }
-                        emit this->endPoints->updateViewFour();
-                         //qDebug()<<"pas geçiyorum";
+                if(DISTANCE_APRROACH_CURRENT_STATION > this->calculateDistance(currentStationLatitude,currentStationLongitude,this->endPoints->actualLatitude().toDouble(),this->endPoints->actualLongitude().toDouble())){
+                    if(busStopped){
+                            emit this->endPoints->anounceCurrentStation();
+                             //qDebug()<<"ikinci anonsu istedim";
+                            inStation = true;
+                            waitToStop= false;
+                    }else if(!waitToStop){
+                            waitToStop=true;
+                            emit this->endPoints->anounceNextStation();
+                             //qDebug()<<"ilk anonsu istedim";
+                    }else{
+                         //qDebug()<<"boştayım";
                     }
+                }else if (waitToStop && (DISTANCE_LEAVE_CURRENT_STATION < this->calculateDistance(currentStationLatitude,currentStationLongitude,this->endPoints->actualLatitude().toDouble(),this->endPoints->actualLongitude().toDouble()))){
+                    waitToStop = false;
+                    inStation = false;
+                    this->endPoints->currentLineStations[this->endPoints->currentStationOrder()].passed = true;
+                    if(this->endPoints->currentStationOrder()+1<this->endPoints->currentLineStations.size()){
+                        this->endPoints->setCurrentStationOrder(this->endPoints->currentStationOrder()+1);
+                    }else{
+                        this->endPoints->setCurrentStationOrder(this->endPoints->currentStationOrder());
+                    }
+                    this->endPoints->setCurrentStation(this->endPoints->nextStation());
+                    this->endPoints->currentViewFour.pop_front();
+                    if(this->endPoints->currentStationOrder()+1<this->endPoints->currentLineStations.size()){
+                        this->endPoints->setNextStation(this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()+1).id);
+                        if(this->endPoints->currentStationOrder()+3<this->endPoints->currentLineStations.size()){
+                            this->endPoints->currentViewFour.append(this->endPoints->currentLineStations.at(this->endPoints->currentStationOrder()+3).name);
+                        }
+                    }else{
+                        this->endPoints->setNextStation("0");
+                        this->endPoints->currentViewFour.append("");
+                    }
+                    emit this->endPoints->updateViewFour();
+                    emit this->endPoints->anounceNextStation();
+                     //qDebug()<<"pas geçiyorum";
+                }
             }
         }else{
             this->endPoints->setStateDispTextOnStationArea(true);

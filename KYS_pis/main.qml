@@ -152,7 +152,7 @@ Window {
                 Text {
                     id: speedText
                     font.pixelSize: 52
-                    text: "23"
+                    text: ""
                     anchors.bottom: iconSpeed.bottom
                     anchors.bottomMargin: -10
                     anchors.left : iconSpeed.right
@@ -166,7 +166,10 @@ Window {
                     font.family: "Tahoma"
                     color: "white"
                     function set(){
-                        speedkmhText.text= dataPoints.vehicleSpeed
+                        speedText.text= dataPoints.vehicleSpeed
+                    }
+                    Component.onCompleted: {
+                        speedText.set();
                     }
                 }
                 Text {
@@ -230,6 +233,7 @@ Window {
 
                      ListModel{
                          id: duraklar
+
                          ListElement{
                              name:"Durak1"
                          }
@@ -248,7 +252,9 @@ Window {
                      ListView{
                          id:myListview
                          anchors.fill: parent
-
+                         onModelChanged: {
+                             duraklar.get(0).update();
+                         }
                          model: duraklar
                          focus:true
                          spacing:48
@@ -258,9 +264,7 @@ Window {
                                  width:highlightedArea.width
                                  height:highlightedArea.height / 6
                                  color:"transparent"
-                                 function update(){
-                                        text.color = (duraklar.get(0).name === name) ? ((root.pulse === true) ? "gray" : "cyan") : (duraklar.get(0).name === name) ? "gray" : "black";
-                                 }
+
                                  Text {
                                              id:text
                                              text: name
@@ -276,7 +280,8 @@ Window {
                                              maximumLineCount: 2
                                              font.pixelSize: Math.min(32, ((parent.width / name.length) * 2.5))
                                              font.family: "Verdana"
-                                             color: (duraklar.get(0).name === name) ? ((root.pulse === true) ? "gray" : "cyan") : (duraklar.get(0).name === name) ? "gray" : "black"
+                                             color: (duraklar.get(0).name === name) ? "cyan" : "black"
+                                             onTextChanged: (duraklar.get(0).name === name) ? "cyan" : "black"
                                          }
 
 
