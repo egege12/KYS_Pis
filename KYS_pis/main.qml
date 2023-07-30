@@ -252,9 +252,7 @@ Window {
                      ListView{
                          id:myListview
                          anchors.fill: parent
-                         onModelChanged: {
-                             duraklar.get(0).update();
-                         }
+                         property bool colorcontrol :true;
                          model: duraklar
                          focus:true
                          spacing:48
@@ -280,8 +278,7 @@ Window {
                                              maximumLineCount: 2
                                              font.pixelSize: Math.min(32, ((parent.width / name.length) * 2.5))
                                              font.family: "Verdana"
-                                             color: (duraklar.get(0).name === name) ? "cyan" : "black"
-                                             onTextChanged: (duraklar.get(0).name === name) ? "cyan" : "black"
+                                             color: ((duraklar).get((duraklar.count/duraklar.count)-1).name === name) ? ("cyan") : ("black")
                                          }
 
 
@@ -477,7 +474,8 @@ Window {
         repeat: true
         running: true
         triggeredOnStart: true
-        onTriggered: {timeText.set()
+        onTriggered: {
+            timeText.set()
         }
     }
     Timer {

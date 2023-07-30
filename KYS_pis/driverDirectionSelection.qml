@@ -54,7 +54,7 @@ Item {
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
                 Grid{
                     id:grid
-                    columns: 7
+                    columns: 4
                     spacing: 5
 
                 property bool dataImported: false
@@ -89,10 +89,10 @@ Item {
                         if (component.status === Component.Ready) {
                             var button = component.createObject(grid, {
                                 "buttonText": text,
-                                "width": 100,
-                                "height": 40,
+                                "width": 180,
+                                "height": 80,
                                 "disableButtonClick": false,
-                                "size": 18,
+                                "size": 32,
                                 "radius": 1.0
                             })
                             if (button === null) {
@@ -135,10 +135,8 @@ Item {
                 driverDirectionRectangle.checkIfDataImported();
             }
             function checkIfDataImported(){
-                if (dataPoints.dataImported) {
                     grid.clearBoxes()
                     grid.createBoxes()
-                }
             }
     }
 

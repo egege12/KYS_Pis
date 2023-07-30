@@ -847,8 +847,6 @@ inline bool endPointsClass::dataImported() const
 
 inline void endPointsClass::setDataImported(bool newDataImported)
 {
-    if (m_dataImported == newDataImported)
-        return;
     m_dataImported = newDataImported;
     emit dataImportedChanged();
 }

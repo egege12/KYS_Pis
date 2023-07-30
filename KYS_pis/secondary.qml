@@ -20,6 +20,8 @@ Window {
     property string nextStationName : "Bilinmiyor"
     property string currentStationName :"Bilinmiyor"
     property bool audioPaused : false;
+    property int iconSize : 30;
+    property int iconPadding: 10;
     //
 //    Rectangle {
 //        id:testArea
@@ -110,27 +112,87 @@ Window {
                 fillMode: Image.PreserveAspectFit
                 mipmap:true
             }
-            Text{
-                anchors.centerIn: parent
-                text: "BOZANKAYA"
-                font.pixelSize: 24
-                elide: Text.ElideRight
-                antialiasing: true
-                font.hintingPreference: Font.PreferNoHinting
-                style: Text.Normal
-                focus: false
-                font.weight: Font.Medium
-                font.family: "Verdana"
-                color: "white"
 
+            Image{
+                id:iconConnection
+                width:iconSize
+                height:iconSize
+                anchors.verticalCenter:parent.verticalCenter
+                anchors.right: logoBuyuksehir.left
+                anchors.rightMargin: 30
+                source:"qrc:/img/connection_Lost.png"
+                fillMode: Image.PreserveAspectFit
+                mipmap:true
+                Component.onCompleted: {
+                    if(dataPoints.stateNetwork){
+                        iconConnection.source="qrc:/img/connection_establish.png"
+                    }else{
+                        iconConnection.source="qrc:/img/connection_Lost.png"
+                    }
+                }
+            }
+            Image{
+                id:iconGPS
+                width:iconSize
+                height:iconSize
+                anchors.verticalCenter:parent.verticalCenter
+                anchors.right: iconConnection.left
+                anchors.rightMargin: iconPadding
+                source:"qrc:/img/GPS_nOK.png"
+                fillMode: Image.PreserveAspectFit
+                mipmap:true
+                Component.onCompleted: {
+                    if(dataPoints.stateNoGpsInfo){
+                        iconGPS.source="qrc:/img/GPS_nOK.png"
+                    }else{
+                        iconGPS.source="qrc:/img/GPS_OK.png"
+                    }
+                }
+            }
+            Image{
+                id:iconStation
+                width:iconSize
+                height:iconSize
+                anchors.verticalCenter:parent.verticalCenter
+                anchors.right: iconGPS.left
+                anchors.rightMargin: iconPadding
+                source:"qrc:/img/stationInfo_nok.png"
+                fillMode: Image.PreserveAspectFit
+                mipmap:true
+                Component.onCompleted: {
+                    if(dataPoints.stateNoStationInfo){
+                        iconStation.source="qrc:/img/stationInfo_nok.png"
+                    }else{
+                        iconStation.source="qrc:/img/stationInfo_ok.png"
+                    }
+                }
+            }
+            Image{
+                id:iconappCom
+                width:iconSize
+                height:iconSize
+                anchors.verticalCenter:parent.verticalCenter
+                anchors.right: iconStation.left
+                anchors.rightMargin: iconPadding
+                source:"qrc:/img/comnOk.png"
+                fillMode: Image.PreserveAspectFit
+                mipmap:true
+                Component.onCompleted: {
+                    if(dataPoints.comAppOK){
+                        iconappCom.source="qrc:/img/comOk.png"
+                    }else{
+                        iconappCom.source="qrc:/img/comnOk.png"
+                    }
+                }
             }
             Text {
                 id: timeText
                 font.pixelSize: 18
                 text: Qt.formatTime(new Date(), "hh:mm")
-                anchors.right: logoBuyuksehir.left
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.rightMargin: 10
+                anchors.left: logoUlasim.right
+                anchors.top : parent.top
+                anchors.topMargin:12
+                anchors.leftMargin: 20
                 elide: Text.ElideRight
                 antialiasing: true
                 font.hintingPreference: Font.PreferNoHinting
@@ -146,10 +208,10 @@ Window {
             Text {
                 id: dateText
                 font.pixelSize: 18
-                text: new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \ndddd")
-                anchors.left: logoUlasim.right
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.leftMargin: 10
+                text: new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy dddd")
+                anchors.left: timeText.left
+                anchors.top: timeText.bottom
+                anchors.topMargin:5
                 elide: Text.ElideRight
                 antialiasing: true
                 font.hintingPreference: Font.PreferNoHinting
@@ -159,7 +221,7 @@ Window {
                 font.family: "Verdana"
                 color: "white"
                 function set(){
-                    dateText.text=new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \ndddd");
+                    dateText.text=new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy dddd");
                 }
             }
         }
@@ -277,7 +339,7 @@ Window {
                 anchors.leftMargin:10
                 anchors.top:currentStationText.bottom
                 anchors.topMargin:10
-                text:"GELECEK DURAK : "+ nextStationName
+                text:"SONRAKİ DURAK : "+ nextStationName
                 font.pixelSize: 18
                 elide: Text.ElideLeft
                 antialiasing: true
@@ -288,81 +350,10 @@ Window {
                 font.family: "Verdana"
                 color: "white"
                 function update(newStation){
-                    nextStationText.text = "GELECEK DURAK : "+newStation;
+                    nextStationText.text = "SONRAKİ DURAK : "+newStation;
                 }
             }
-            Image{
-                id:iconConnection
-                width:40
-                height:40
-                anchors.verticalCenter:parent.verticalCenter
-                anchors.right: parent.right
-                anchors.rightMargin: 30
-                source:"qrc:/img/connection_Lost.png"
-                fillMode: Image.PreserveAspectFit
-                mipmap:true
-                Component.onCompleted: {
-                    if(dataPoints.stateNetwork){
-                        iconConnection.source="qrc:/img/connection_establish.png"
-                    }else{
-                        iconConnection.source="qrc:/img/connection_Lost.png"
-                    }
-                }
-            }
-            Image{
-                id:iconGPS
-                width:40
-                height:40
-                anchors.verticalCenter:parent.verticalCenter
-                anchors.right: iconConnection.left
-                anchors.rightMargin: 30
-                source:"qrc:/img/GPS_nOK.png"
-                fillMode: Image.PreserveAspectFit
-                mipmap:true
-                Component.onCompleted: {
-                    if(dataPoints.stateNoGpsInfo){
-                        iconGPS.source="qrc:/img/GPS_nOK.png"
-                    }else{
-                        iconGPS.source="qrc:/img/GPS_OK.png"
-                    }
-                }
-            }
-            Image{
-                id:iconStation
-                width:40
-                height:40
-                anchors.verticalCenter:parent.verticalCenter
-                anchors.right: iconGPS.left
-                anchors.rightMargin: 30
-                source:"qrc:/img/stationInfo_nok.png"
-                fillMode: Image.PreserveAspectFit
-                mipmap:true
-                Component.onCompleted: {
-                    if(dataPoints.stateNoStationInfo){
-                        iconStation.source="qrc:/img/stationInfo_nok.png"
-                    }else{
-                        iconStation.source="qrc:/img/stationInfo_ok.png"
-                    }
-                }
-            }
-            Image{
-                id:iconappCom
-                width:40
-                height:40
-                anchors.verticalCenter:parent.verticalCenter
-                anchors.right: iconStation.left
-                anchors.rightMargin: 30
-                source:"qrc:/img/comnOk.png"
-                fillMode: Image.PreserveAspectFit
-                mipmap:true
-                Component.onCompleted: {
-                    if(dataPoints.comAppOK){
-                        iconappCom.source="qrc:/img/comOk.png"
-                    }else{
-                        iconappCom.source="qrc:/img/comnOk.png"
-                    }
-                }
-            }
+
 
         }
     }

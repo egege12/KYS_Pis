@@ -1242,12 +1242,13 @@ void workerObject::cycleCall()
 void workerObject::updateList()
 {
     if(this->endPoints->updateStations()){
-        this->endPoints->setDataImported(false);
+
         bool updateComplete = false;
         bool processBlockedFileLines = !readLineLIST(false);
 
         if(!processBlockedFileLines){
             if(!((processBlockedService = !(checkConnection())) || (processBlockedConnection= !(checkService())))){
+                this->endPoints->setDataImported(false);
                 sendHttpReq();
                 updateComplete = readJSON(false);
                 this->endPoints->setErrCode("-updateList- Güncelleme işleniyor");
@@ -1372,7 +1373,7 @@ void workerObject::mainPIS()
                             waitToStop= false;
                     }else if(!waitToStop){
                             waitToStop=true;
-                            emit this->endPoints->anounceNextStation();
+                            //emit this->endPoints->anounceNextStation();
                              //qDebug()<<"ilk anonsu istedim";
                     }else{
                          //qDebug()<<"boştayım";
