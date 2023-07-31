@@ -110,6 +110,39 @@ Window {
                 anchors.rightMargin:30
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 100
+                Text{
+                    id:longitude
+                    font.pixelSize: 18
+                    text: "Boylam"
+                    anchors.bottom: logoUlasim.top
+                    anchors.bottomMargin: 50
+                    anchors.left:logoUlasim.left
+                    elide: Text.ElideRight
+                    antialiasing: true
+                    font.hintingPreference: Font.PreferNoHinting
+                    style: Text.Normal
+                    focus: false
+                    font.weight: Font.Bold
+                    font.family: "Verdana"
+                    color: "white"
+                }
+                Text{
+                    id:latidude
+                    font.pixelSize: 18
+                    text: "Enlem"
+                    anchors.bottom: longitude.top
+                    anchors.bottomMargin: 50
+                    anchors.left:longitude.left
+                    elide: Text.ElideRight
+                    antialiasing: true
+                    font.hintingPreference: Font.PreferNoHinting
+                    style: Text.Normal
+                    focus: false
+                    font.weight: Font.Bold
+                    font.family: "Verdana"
+                    color: "white"
+                }
+
                 Image{
                     id:logoUlasim
                     anchors.left: parent.left
@@ -514,6 +547,7 @@ Window {
     }
 
     property bool nextStationTag : false;
+
     Connections{
         target: dataPoints
         onAnounceNextStation:{
@@ -521,9 +555,6 @@ Window {
             nextstationTimer.start();
             nextStationTag=true;
         }
-    }
-    Connections{
-        target: dataPoints
         onAnounceCurrentStation:{
            dataPoints.playSoundStations="file:///"+dataPoints.getPathAudio(dataPoints.currentStation);
         }
@@ -539,41 +570,21 @@ Window {
                  iconSpeed.visible=true
                  speedkmhText.visible =true
             }
-
-
         }
-    }
-    Connections{
-        target: dataPoints
-        onVideoFolderUpdated:{
-           player.play();
-        }
-    }
-    Connections{
-        target: dataPoints
         onStateDispWatchOnVideoAreaChanged:{
            screenSaverRight.visible= dataPoints.stateDispWatchOnVideoArea;
         }
-    }
-    Connections{
-        target: dataPoints
         onLoadViewFour:{
             duraklar.clear();
             for (var i = 0; i < 4; i++) {
                         duraklar.append({"name": dataPoints.getViewFourMember(i)});
             }
         }
-    }
-    Connections{
-        target: dataPoints
         onUpdateViewFour:{
             duraklar.remove(0,1);
             duraklar.append({"name": dataPoints.getViewFourMember(3)});
             delegateRect.update();
         }
-    }
-    Connections{
-        target:dataPoints
         onStateDispTextOnStationAreaChanged:{
             if(dataPoints.stateDispTextOnStationArea){
                 rightSide.visible=false;
@@ -585,6 +596,16 @@ Window {
                 console.log("visible true");
             }
         }
+        onVideoFolderUpdated:{
+           player.play();
+        }
+        onActualLongitudeChanged:{
+            longitude.text="Boylam: "+dataPoints.actualLongitude;
+        }
+        onActualLatitudeChanged:{
+            latidude.text="Enlem: "+dataPoints.actualLatitude;
+        }
+
     }
 
 

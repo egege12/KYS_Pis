@@ -632,6 +632,10 @@ void workerObject::startObject()
     timer2->setInterval(CYCLETIMER_INTERVAL);
     QObject::connect(timer2,&QTimer::timeout,this,&workerObject::cycleCall,Qt::AutoConnection);
     timer2->start();
+    timer3 = new QTimer(this);
+    timer3->setInterval(CYCLETIMER_INTERVAL);
+    QObject::connect(timer3,&QTimer::timeout,this,&workerObject::onTimeoutGPS,Qt::AutoConnection);
+    timer3->start(20000);
     this-> serialPort = new QSerialPort;
     this->serialPort->setPortName("COM4");
     this->serialPort->setBaudRate(QSerialPort::Baud9600);
@@ -699,21 +703,21 @@ void workerObject::saveDataStations(const QJsonArray& dataStations)
 
 void workerObject::gnggaSplitter(QByteArray &line)
 {
-    QString stringData = line;
+    QString stringData = "line";
     QStringList splitedData= stringData.split(',');
 
     int degreelat = static_cast<int>(splitedData[2].toDouble());
     double minuteslat = (splitedData[2].toDouble() - degreelat) * 60; // Ondalık kısmı dakikaya çevir
-    double latitude = degreelat + (latitude / 60);
+    double latitude = degreelat + (minuteslat / 60);
     this->endPoints->ioCom.GPSLatitude = latitude;
     int degreelong = static_cast<int>(splitedData[4].toDouble());
     double minuteslong = (splitedData[4].toDouble() - degreelong) * 60; // Ondalık kısmı dakikaya çevir
     double longitude = degreelong + (minuteslong / 60);
     this->endPoints->ioCom.GPSLongtitude = longitude;
     if((latitude <1) || (longitude <1)){
-        GPSGNSSNotEmpty = true;
-    }else{
         GPSGNSSNotEmpty = false;
+    }else{
+        GPSGNSSNotEmpty = true;
     }
 }
 void workerObject::sendHttpReq()
@@ -1187,7 +1191,22 @@ void workerObject::rwComApp()
 
 void workerObject::cycleCall()
 {
+    QString stringData = "$GNGGA,131004.00,3958.96935,N,03232.30900,E,2,11,1.93,819.0,M,36.4,M,,0000*41";
+    QStringList splitedData= stringData.split(',');
 
+    //int degreelat = static_cast<int>(splitedData[2].toDouble());
+    //double minuteslat = (splitedData[2].toDouble() - degreelat) * 60; // Ondalık kısmı dakikaya çevir
+    double latitude = splitedData[2].toDouble() / 100;
+    this->endPoints->ioCom.GPSLatitude = latitude;
+    //int degreelong = static_cast<int>(splitedData[4].toDouble());
+    //double minuteslong = (splitedData[4].toDouble() - degreelong) * 60; // Ondalık kısmı dakikaya çevir
+    double longitude = splitedData[4].toDouble() / 100;
+    this->endPoints->ioCom.GPSLongtitude = longitude;
+    if((latitude <1) || (longitude <1)){
+        GPSGNSSNotEmpty = false;
+    }else{
+        GPSGNSSNotEmpty = true;
+    }
     // Setters
 
     if(this->endPoints->errList.size()>LOG_SAVE_COUNTER){
@@ -1258,15 +1277,19 @@ void workerObject::cycleCall()
     //GPS Checker
 
     if(serialPort->isOpen()){
-        serialPortFailed = false;
-        qDebug()<<"serialPort açık";
+        if(serialPortFailed){
+            serialPortFailed = false;
+            qDebug()<<"serialPort açık";
+        }
     }else{
         if(!serialPort->open(QIODevice::ReadOnly)){
-            serialPortFailed = true;
-            qDebug()<<"serialPort açılamadı";
+            if(!serialPortFailed){
+                serialPortFailed = true;
+            }// qDebug()<<"serialPort açılamadı";
         }else{
-            serialPortFailed = false;
-            qDebug()<<"serialPort açıldı";
+            if(serialPortFailed){
+                serialPortFailed = false;
+            }//qDebug()<<"serialPort açıldı";
         }
     }
     //Cycle operation exits
@@ -1483,6 +1506,7 @@ void workerObject::confirmLineSelection()
 
 void workerObject::readSerialGPS()
 {
+    timer3->start();
     QByteArray data = this->serialPort->readAll();
     if(data.contains("GNGGA")){
         receivedData.clear();
@@ -1501,5 +1525,9 @@ void workerObject::readSerialGPS()
         receivedData.append(data);
     }
 
+}
 
+void workerObject::onTimeoutGPS()
+{
+    serialPortFailed = true;
 }

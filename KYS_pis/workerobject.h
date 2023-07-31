@@ -17,6 +17,7 @@ private:
     endPointsClass *endPoints;
     QTimer *timer1;
     QTimer *timer2;
+    QTimer *timer3;
     QList<QString> lines;
     unsigned failCounterLifeSign;
     unsigned failGPSCounter;
@@ -89,6 +90,7 @@ public slots:
     void handleLineSelection();
     void confirmLineSelection();
     void readSerialGPS();
+    void onTimeoutGPS();
 
 signals:
     void doneUpdate(bool updateStations);
