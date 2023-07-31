@@ -16,6 +16,7 @@
 #include <QEventLoop>
 #include <iterator>
 #include <QtMath>
+
 #define COM_INTERVAL 1000
 #define CYCLETIMER_INTERVAL 500
 #define LOG_SAVE_COUNTER 10
@@ -40,6 +41,8 @@ workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
     this->cycleCheckUpdate=false;
     this->busStopped= false;
     this->waitToStop= false;
+    this->serialPortFailed=false;
+    this->GPSGNSSNotEmpty=false;
 }
 
 workerObject::~workerObject()
@@ -116,13 +119,13 @@ void workerObject::checkLifeSign(unsigned int oldLifeSign, unsigned int newLifeS
 bool workerObject::checkGPS()
 {
 
-    if(!this->endPoints->iiCom.GPSOk){
-        qDebug()<<"GPS STATUS :"<<this->endPoints->iiCom.GPSOk;
+    if(serialPortFailed || !GPSGNSSNotEmpty){
+        //qDebug()<<"GPS STATUS :"<<false;
         return false;
     }else{
-        if(this->endPoints->iiCom.GPSLatitude != this->GPSLatitude){
+        if(this->endPoints->ioCom.GPSLatitude != this->GPSLatitude){
             this->failGPSCounter=0;
-        }else if(this->endPoints->iiCom.GPSLongtitude != this->GPSLongtitude){
+        }else if(this->endPoints->ioCom.GPSLongtitude != this->GPSLongtitude){
             this->failGPSCounter=0;
         }else{
             ++this->failGPSCounter;
@@ -629,8 +632,20 @@ void workerObject::startObject()
     timer2->setInterval(CYCLETIMER_INTERVAL);
     QObject::connect(timer2,&QTimer::timeout,this,&workerObject::cycleCall,Qt::AutoConnection);
     timer2->start();
-
-
+    this-> serialPort = new QSerialPort;
+    this->serialPort->setPortName("COM4");
+    this->serialPort->setBaudRate(QSerialPort::Baud9600);
+    this->serialPort->setDataBits(QSerialPort::Data8);
+    this->serialPort->setParity(QSerialPort::NoParity);
+    this->serialPort->setStopBits(QSerialPort::OneStop);
+    this->serialPort->setFlowControl(QSerialPort::HardwareControl);
+    if (!serialPort->open(QIODevice::ReadOnly)) {
+         this->endPoints->setErrCode("COM4 portu açılamadı. GPS verisi alınamaz.");
+        serialPortFailed=true;
+    }else{
+        serialPortFailed=false;
+    }
+    QObject::connect(serialPort, &QSerialPort::readyRead,this,&workerObject::readSerialGPS,Qt::AutoConnection);
     QObject::connect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::updateList,Qt::AutoConnection);
     QObject::connect(this->endPoints,&endPointsClass::lineSelectedChanged,this,&workerObject::handleLineSelection,Qt::AutoConnection);
     QObject::connect(this->endPoints,&endPointsClass::StationConfirmedChanged,this,&workerObject::confirmLineSelection,Qt::AutoConnection);
@@ -646,8 +661,10 @@ void workerObject::stopObject()
     timer2->stop();
     delete timer1;
     delete timer2;
+    delete  this->serialPort;
     //Nothing here
     QObject::disconnect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::updateList);
+    QObject::disconnect(serialPort, &QSerialPort::readyRead,this,&workerObject::readSerialGPS);
 }
 void workerObject::saveDataStations(const QJsonArray& dataStations)
 {
@@ -677,6 +694,26 @@ void workerObject::saveDataStations(const QJsonArray& dataStations)
         //qDebug() << "Dosya güncellendi!";
     } else {
         //qDebug() << "Dosya oluşturuldu!";
+    }
+}
+
+void workerObject::gnggaSplitter(QByteArray &line)
+{
+    QString stringData = line;
+    QStringList splitedData= stringData.split(',');
+
+    int degreelat = static_cast<int>(splitedData[2].toDouble());
+    double minuteslat = (splitedData[2].toDouble() - degreelat) * 60; // Ondalık kısmı dakikaya çevir
+    double latitude = degreelat + (latitude / 60);
+    this->endPoints->ioCom.GPSLatitude = latitude;
+    int degreelong = static_cast<int>(splitedData[4].toDouble());
+    double minuteslong = (splitedData[4].toDouble() - degreelong) * 60; // Ondalık kısmı dakikaya çevir
+    double longitude = degreelong + (minuteslong / 60);
+    this->endPoints->ioCom.GPSLongtitude = longitude;
+    if((latitude <1) || (longitude <1)){
+        GPSGNSSNotEmpty = true;
+    }else{
+        GPSGNSSNotEmpty = false;
     }
 }
 void workerObject::sendHttpReq()
@@ -1067,24 +1104,6 @@ void workerObject::rwComApp()
                 }else{
                     this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> VehicleID bulunamadı.");
                 }
-                if(IIDataObj.contains("GPSOk")){
-                    this->endPoints->iiCom.GPSOk = IIDataObj["GPSOk"].toBool();
-                    //qDebug()<<"GPSOk"<<this->endPoints->iiCom.GPSOk ;
-                }else{
-                    this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> GPSOk bulunamadı.");
-                }
-                if(IIDataObj.contains("GPSLongtitude")){
-                    this->endPoints->iiCom.GPSLongtitude = IIDataObj["GPSLongtitude"].toDouble();
-                    //qDebug()<<"GPSLongtitude"<<this->endPoints->iiCom.GPSLongtitude ;
-                }else{
-                    this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> GPSLongtitude bulunamadı.");
-                }
-                if(IIDataObj.contains("GPSLatitude")){
-                    this->endPoints->iiCom.GPSLatitude = IIDataObj["GPSLatitude"].toDouble();
-                    //qDebug()<<"GPSLatitude"<<this->endPoints->iiCom.GPSLatitude ;
-                }else{
-                    this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> GPSLatitude bulunamadı.");
-                }
                 if(IIDataObj.contains("VehicleSpeed")){
                     this->endPoints->iiCom.VehicleSpeed = IIDataObj["VehicleSpeed"].toDouble();
                     //qDebug()<<"VehicleSpeed"<<this->endPoints->iiCom.VehicleSpeed ;
@@ -1104,9 +1123,6 @@ void workerObject::rwComApp()
                     this->endPoints->setErrCode("-rwComApp-ApptoPIS.json -> ProgressUpdate bulunamadı.");
                 }
             }else{
-                this->endPoints->iiCom.GPSOk = false;
-                this->endPoints->iiCom.GPSLongtitude = 0;
-                this->endPoints->iiCom.GPSLatitude = 0;
                 this->endPoints->iiCom.VehicleSpeed = 9999;
                 this->endPoints->iiCom.AnyDoorOpen = false;
                 if(this->endPoints->comAppOK()){
@@ -1157,6 +1173,9 @@ void workerObject::rwComApp()
         sendObject.insert("NextStationId",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.NextStationId))));
         sendObject.insert("ActiveAnounce",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.ActiveAnounce))));
         sendObject.insert("ActiveCommercial",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.ActiveCommercial))));
+        sendObject.insert("GPSOk",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.GPSOk))));
+        sendObject.insert("GPSLongtitude",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.GPSLongtitude))));
+        sendObject.insert("GPSLatitude",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.GPSLatitude))));
         QJsonDocument QJsonDocument(sendObject);
         pisToApp.write(QJsonDocument.toJson());
         pisToApp.close();
@@ -1177,8 +1196,6 @@ void workerObject::cycleCall()
     //Use communication parameters
         //Inputs
     this->endPoints->setStateNoGpsInfo(!checkGPS());
-    this->endPoints->setactualLatitude(QString::number(this->endPoints->iiCom.GPSLatitude));
-    this->endPoints->setactualLongitude(QString::number(this->endPoints->iiCom.GPSLongtitude));
     this->endPoints->setVehicleSpeed(QString::number(this->endPoints->iiCom.VehicleSpeed, 'f', 0));
     this->endPoints->setVehicleID((QString::number(this->endPoints->iiCom.VehicleID)));
     this->endPoints->setAnyDoorOpen(this->endPoints->iiCom.AnyDoorOpen);
@@ -1191,6 +1208,8 @@ void workerObject::cycleCall()
     this->endPoints->ioCom.ActiveAnounce=this->endPoints->activeAnounce();
     this->endPoints->ioCom.ActiveCommercial=this->endPoints->activeCommercial();
     //Use communication parameters
+    this->endPoints->setactualLatitude(QString::number(this->endPoints->ioCom.GPSLatitude));
+    this->endPoints->setactualLongitude(QString::number(this->endPoints->ioCom.GPSLongtitude));
     mainPIS();
     checkConnection();
 
@@ -1199,19 +1218,19 @@ void workerObject::cycleCall()
         if(processBlockedConnection){
             if(checkConnection()){
                 this->readStations();
-                 qDebug()<<"1";
+                 qDebug()<<"processBlockedConnection";
             }
         }
         if(processBlockedFileLines){
             if(checkFileLines() && readLineLIST(false)){
                 this->readStations();
-                 qDebug()<<"2";
+                 qDebug()<<"processBlockedFileLines";
             }
         }
         if(processBlockedService){
             if(checkService()){
                 this->readStations();
-                 qDebug()<<"3";
+                 qDebug()<<"processBlockedService";
             }
         }
     }
@@ -1219,20 +1238,35 @@ void workerObject::cycleCall()
         if(processBlockedConnection){
             if(checkConnection()){
                 this->updateList();
-                qDebug()<<"1";
+                qDebug()<<"processBlockedConnection";
             }
         }
         if(processBlockedFileLines){
             if(checkFileLines() && readLineLIST(false)){
                 this->updateList();
-                qDebug()<<"2";
+                qDebug()<<"processBlockedFileLines";
             }
         }
         if(processBlockedService){
             if(checkService()){
                 this->updateList();
-                qDebug()<<"3";
+                qDebug()<<"processBlockedService";
             }
+        }
+    }
+
+    //GPS Checker
+
+    if(serialPort->isOpen()){
+        serialPortFailed = false;
+        qDebug()<<"serialPort açık";
+    }else{
+        if(!serialPort->open(QIODevice::ReadOnly)){
+            serialPortFailed = true;
+            qDebug()<<"serialPort açılamadı";
+        }else{
+            serialPortFailed = false;
+            qDebug()<<"serialPort açıldı";
         }
     }
     //Cycle operation exits
@@ -1444,5 +1478,28 @@ void workerObject::confirmLineSelection()
         this->endPoints->setLineSelected(false);
         this->endPoints->setCurrentLine(this->endPoints->selectedLine.replace("_","->"));
     }
+
+}
+
+void workerObject::readSerialGPS()
+{
+    QByteArray data = this->serialPort->readAll();
+    if(data.contains("GNGGA")){
+        receivedData.clear();
+        receivedData.append(data);
+        receivedDataGNGGAFlag = true;
+    }else if(data.contains("\n")){
+        int newlineIndex = data.indexOf("\n");
+        if(newlineIndex>0){
+            receivedData.append(data.left(newlineIndex-1));
+        }
+        this->gnggaSplitter(receivedData);
+        receivedDataGNGGAFlag = false;
+        this->endPoints->setErrCode("Gelen veri:"+ receivedData);
+        this->endPoints->setErrCode("Enlem:"+ QString::number(this->endPoints->ioCom.GPSLatitude) +"Boylam"+QString::number(this->endPoints->ioCom.GPSLongtitude));
+    }else if(receivedDataGNGGAFlag){
+        receivedData.append(data);
+    }
+
 
 }

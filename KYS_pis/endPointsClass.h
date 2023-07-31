@@ -65,9 +65,6 @@ public:
     struct IIData{
         unsigned VehicleID;
         unsigned LifeSign;
-        bool GPSOk;
-        double GPSLongtitude;
-        double GPSLatitude;
         double VehicleSpeed;
         bool AnyDoorOpen;
         bool ProgressUpdate;
@@ -84,6 +81,9 @@ public:
         unsigned NextStationId;
         QString ActiveAnounce;
         QString ActiveCommercial;
+        bool GPSOk;
+        double GPSLongtitude;
+        double GPSLatitude;
     };
 
     IIData iiCom;
@@ -405,11 +405,11 @@ inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
     ioCom.ActiveStationId=0;
     ioCom.ActiveDirection=0;
     ioCom.NextStation="";
+    ioCom.GPSOk=false;
+    ioCom.GPSLongtitude=0;
+    ioCom.GPSLatitude=0;
     iiCom.VehicleID=0;
     iiCom.LifeSign=0;
-    iiCom.GPSOk=false;
-    iiCom.GPSLongtitude=0;
-    iiCom.GPSLatitude=0;
     iiCom.VehicleSpeed=0;
     iiCom.AnyDoorOpen=false;
     iiCom.ProgressUpdate=false;
@@ -1096,9 +1096,9 @@ inline void endPointsClass::clearList()
     ioCom.NextStation="";
     iiCom.VehicleID=0;
     iiCom.LifeSign=0;
-    iiCom.GPSOk=false;
-    iiCom.GPSLongtitude=0;
-    iiCom.GPSLatitude=0;
+    ioCom.GPSOk=false;
+    ioCom.GPSLongtitude=0;
+    ioCom.GPSLatitude=0;
     iiCom.VehicleSpeed=0;
     iiCom.AnyDoorOpen=false;
     iiCom.ProgressUpdate=false;

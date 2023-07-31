@@ -14,7 +14,7 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Quick)
 find_package(Qt5 REQUIRED COMPONENTS QuickControls2)
 find_package(Qt5 REQUIRED COMPONENTS Quick)
 find_package(Qt5 REQUIRED COMPONENTS Multimedia)
-
+find_package(Qt5 COMPONENTS Core SerialPort REQUIRED)
 
 add_executable(appKYS_Pis
     qml.qrc
@@ -43,7 +43,7 @@ set_target_properties(appKYS_Pis PROPERTIES
 target_link_libraries(appKYS_Pis
     PRIVATE Qt5::Quick
 )
-target_link_libraries(appKYS_Pis PRIVATE Qt5::Multimedia)
+target_link_libraries(appKYS_Pis PRIVATE Qt5::Multimedia Qt5::Core Qt5::SerialPort)
 install(TARGETS appKYS_Pis
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

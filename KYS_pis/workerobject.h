@@ -7,7 +7,8 @@
 #include "endPointsClass.h"
 #include <QTimer>
 #include <QList>
-
+#include <QtSerialPort/QSerialPort>
+#include <QtSerialPort/QSerialPortInfo>
 class workerObject : public QObject
 {
     Q_OBJECT
@@ -19,7 +20,11 @@ private:
     QList<QString> lines;
     unsigned failCounterLifeSign;
     unsigned failGPSCounter;
-
+    QSerialPort *serialPort;
+    bool serialPortFailed;
+    bool GPSGNSSNotEmpty;
+    QByteArray receivedData;
+    bool receivedDataGNGGAFlag;
     //Old containers
     double GPSLatitude;
     double GPSLongtitude;
@@ -46,6 +51,7 @@ public:
     bool readJSON(bool useBackup);
     bool readLineLIST(bool useBackup);
     void saveDataStations(const QJsonArray& dataStations);
+    void gnggaSplitter(QByteArray &line);
 
     //Checkers
     bool checkConnection();
@@ -82,6 +88,7 @@ public slots:
     void updateList();
     void handleLineSelection();
     void confirmLineSelection();
+    void readSerialGPS();
 
 signals:
     void doneUpdate(bool updateStations);
