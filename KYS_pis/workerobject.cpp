@@ -633,7 +633,6 @@ void workerObject::startObject()
     QObject::connect(timer2,&QTimer::timeout,this,&workerObject::cycleCall,Qt::AutoConnection);
     timer2->start();
     timer3 = new QTimer(this);
-    timer3->setInterval(CYCLETIMER_INTERVAL);
     QObject::connect(timer3,&QTimer::timeout,this,&workerObject::onTimeoutGPS,Qt::AutoConnection);
     timer3->start(20000);
     this-> serialPort = new QSerialPort;
@@ -659,16 +658,20 @@ void workerObject::startObject()
 
 void workerObject::stopObject()
 {
-    QObject::disconnect(timer1,&QTimer::timeout,this,&workerObject::rwComApp);
-    QObject::disconnect(timer2,&QTimer::timeout,this,&workerObject::cycleCall);
     timer1->stop();
     timer2->stop();
+    timer3->stop();
+    QObject::disconnect(timer1,&QTimer::timeout,this,&workerObject::rwComApp);
+    QObject::disconnect(timer2,&QTimer::timeout,this,&workerObject::cycleCall);
+    QObject::disconnect(timer3,&QTimer::timeout,this,&workerObject::onTimeoutGPS);
     delete timer1;
     delete timer2;
+    delete timer3;
     delete  this->serialPort;
     //Nothing here
     QObject::disconnect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::updateList);
     QObject::disconnect(serialPort, &QSerialPort::readyRead,this,&workerObject::readSerialGPS);
+
 }
 void workerObject::saveDataStations(const QJsonArray& dataStations)
 {
@@ -703,27 +706,27 @@ void workerObject::saveDataStations(const QJsonArray& dataStations)
 
 void workerObject::gnggaSplitter(QByteArray &line)
 {
-    QString stringData = "line";
-    QStringList splitedData= stringData.split(',');
-
-    int degreelat = static_cast<int>(splitedData[2].toDouble());
-    double minuteslat = (splitedData[2].toDouble() - degreelat) * 60; // Ondalık kısmı dakikaya çevir
-    double latitude = degreelat + (minuteslat / 60);
-    this->endPoints->ioCom.GPSLatitude = latitude;
-    int degreelong = static_cast<int>(splitedData[4].toDouble());
-    double minuteslong = (splitedData[4].toDouble() - degreelong) * 60; // Ondalık kısmı dakikaya çevir
-    double longitude = degreelong + (minuteslong / 60);
-    this->endPoints->ioCom.GPSLongtitude = longitude;
-    if((latitude <1) || (longitude <1)){
-        GPSGNSSNotEmpty = false;
-    }else{
-        GPSGNSSNotEmpty = true;
+    QString stringData = line;
+    if(!stringData.isEmpty() && stringData.contains(',')){
+        QStringList splitedData= stringData.split(',');
+        int degreelat       = static_cast<int>(splitedData[2].toDouble())/100;
+        double minuteslat   = splitedData[2].toDouble() - ( degreelat * 100.0); // Ondalık kısmı dakikaya çevir
+        double latitude     = degreelat + (minuteslat / 60);
+        this->endPoints->ioCom.GPSLatitude = latitude;
+        int degreelong      = static_cast<int>(splitedData[4].toDouble())/100;
+        double minuteslong  = splitedData[4].toDouble() - ( degreelong * 100.0);  // Ondalık kısmı dakikaya çevir
+        double longitude    = degreelong + (minuteslong / 60);
+        this->endPoints->ioCom.GPSLongtitude = longitude;
+        if((latitude <1) || (longitude <1)){
+            GPSGNSSNotEmpty = false;
+        }else{
+            GPSGNSSNotEmpty = true;
+        }
     }
 }
 void workerObject::sendHttpReq()
 {
     QString apiUrl = "https://kaktusmobile.kayseriulasim.com.tr/api/LineStops";
-
 
     for (const QString& lineId : lines) {
 
@@ -1191,24 +1194,7 @@ void workerObject::rwComApp()
 
 void workerObject::cycleCall()
 {
-    QString stringData = "$GNGGA,131004.00,3958.96935,N,03232.30900,E,2,11,1.93,819.0,M,36.4,M,,0000*41";
-    QStringList splitedData= stringData.split(',');
-
-    //int degreelat = static_cast<int>(splitedData[2].toDouble());
-    //double minuteslat = (splitedData[2].toDouble() - degreelat) * 60; // Ondalık kısmı dakikaya çevir
-    double latitude = splitedData[2].toDouble() / 100;
-    this->endPoints->ioCom.GPSLatitude = latitude;
-    //int degreelong = static_cast<int>(splitedData[4].toDouble());
-    //double minuteslong = (splitedData[4].toDouble() - degreelong) * 60; // Ondalık kısmı dakikaya çevir
-    double longitude = splitedData[4].toDouble() / 100;
-    this->endPoints->ioCom.GPSLongtitude = longitude;
-    if((latitude <1) || (longitude <1)){
-        GPSGNSSNotEmpty = false;
-    }else{
-        GPSGNSSNotEmpty = true;
-    }
     // Setters
-
     if(this->endPoints->errList.size()>LOG_SAVE_COUNTER){
         saveLogs();
     }

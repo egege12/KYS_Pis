@@ -110,38 +110,39 @@ Window {
                 anchors.rightMargin:30
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 100
-                Text{
-                    id:longitude
-                    font.pixelSize: 18
-                    text: "Boylam"
-                    anchors.bottom: logoUlasim.top
-                    anchors.bottomMargin: 50
-                    anchors.left:logoUlasim.left
-                    elide: Text.ElideRight
-                    antialiasing: true
-                    font.hintingPreference: Font.PreferNoHinting
-                    style: Text.Normal
-                    focus: false
-                    font.weight: Font.Bold
-                    font.family: "Verdana"
-                    color: "white"
-                }
-                Text{
-                    id:latidude
-                    font.pixelSize: 18
-                    text: "Enlem"
-                    anchors.bottom: longitude.top
-                    anchors.bottomMargin: 50
-                    anchors.left:longitude.left
-                    elide: Text.ElideRight
-                    antialiasing: true
-                    font.hintingPreference: Font.PreferNoHinting
-                    style: Text.Normal
-                    focus: false
-                    font.weight: Font.Bold
-                    font.family: "Verdana"
-                    color: "white"
-                }
+                /*Testing reasons*/
+                //Text{
+                //    id:longitude
+                //    font.pixelSize: 18
+                //    text: "Boylam"
+                //    anchors.bottom: logoUlasim.top
+                //    anchors.bottomMargin: 50
+                //    anchors.left:logoUlasim.left
+                //    elide: Text.ElideRight
+                //    antialiasing: true
+                //    font.hintingPreference: Font.PreferNoHinting
+                //    style: Text.Normal
+                //    focus: false
+                //    font.weight: Font.Bold
+                //    font.family: "Verdana"
+                //    color: "white"
+                //}
+                //Text{
+                //    id:latidude
+                //    font.pixelSize: 18
+                //    text: "Enlem"
+                //    anchors.bottom: longitude.top
+                //    anchors.bottomMargin: 50
+                //    anchors.left:longitude.left
+                //    elide: Text.ElideRight
+                //    antialiasing: true
+                //    font.hintingPreference: Font.PreferNoHinting
+                //    style: Text.Normal
+                //    focus: false
+                //    font.weight: Font.Bold
+                //    font.family: "Verdana"
+                //    color: "white"
+                //}
 
                 Image{
                     id:logoUlasim
@@ -268,16 +269,16 @@ Window {
                          id: duraklar
 
                          ListElement{
-                             name:"Durak1"
+                             name:""
                          }
                          ListElement{
-                             name:"Durak2"
+                             name:""
                          }
                          ListElement{
-                             name:"Durak3"
+                             name:""
                          }
                          ListElement{
-                             name:"Durak4"
+                             name:""
                          }
 
                      }
@@ -599,12 +600,13 @@ Window {
         onVideoFolderUpdated:{
            player.play();
         }
-        onActualLongitudeChanged:{
-            longitude.text="Boylam: "+dataPoints.actualLongitude;
-        }
-        onActualLatitudeChanged:{
-            latidude.text="Enlem: "+dataPoints.actualLatitude;
-        }
+        /*Testing reason*/
+        //onActualLongitudeChanged:{
+        //    longitude.text="Boylam: "+dataPoints.actualLongitude;
+        //}
+        //onActualLatitudeChanged:{
+        //    latidude.text="//: "+dataPoints.actual//tude;
+        //}
 
     }
 

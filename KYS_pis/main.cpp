@@ -20,7 +20,8 @@ int main(int argc, char *argv[])
     QObject::connect(&workerThread, SIGNAL(started()), &serviceObj, SLOT(startObject()));
     QObject::connect(&workerThread, SIGNAL(finished()), &serviceObj, SLOT(stopObject()));
     workerThread.start();
-    QObject::connect(QThread::currentThread(), SIGNAL(destroyed()), &workerThread, SLOT(quit()));
+    QObject::connect(QThread::currentThread(), SIGNAL(aboutToQuit()), &serviceObj, SLOT(stopObject()));
+    QObject::connect(&app, SIGNAL(aboutToQuit()), &workerThread, SLOT(quit()));
     QQmlApplicationEngine engine;
     // Birinci QML dosyası ekleme
     const QUrl url("qrc:/Main.qml");
