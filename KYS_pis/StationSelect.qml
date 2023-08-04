@@ -31,12 +31,20 @@ Item {
                 buttonImageSource : "qrc:/img/busDRMicon.png"
                 radius: 1
                 imageRatio: 1
-                disableButtonClick: false
+                disableButtonClick: !dataPoints.dataImported
                 buttonText: ""
                 onButtonClicked:{
                     dataPoints.selectLine();
                 }
             }
+            Connections{
+                target:dataPoints
+                onDataImportedChanged:{
+                    buttonSelect.disableButtonClick= !dataPoints.dataImported
+                }
+
+            }
+
             ScrollView {
                     id: stationsArea
                     width: parent.width-(buttonBack.width+buttonSelect.width)

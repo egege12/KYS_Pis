@@ -63,12 +63,12 @@ Item {
                 displayText: dataPoints.periodOfAnounce
                 visible: true
                 model:
-                    ["30 Dakika",
-                    "45 Dakika",
-                    "1 Saat",
-                    "2 Saat",
-                    "3 Saat",
-                    "Günde 1",]
+                    [   "30 Dakika" ,
+                        "45 Dakika" ,
+                        "1 Saat"    ,
+                        "2 Saat"    ,
+                        "3 Saat"    ,
+                        "Günde 1"   ,]
                 onActivated: {
                     dataPoints.periodOfAnounce = currentText;
                     displayText=currentText;
@@ -138,6 +138,14 @@ Item {
                             "import QtQuick.Controls 2.15; Switch { }",
                             rect
                         );
+                        switchItem.onClicked.connect(function(){
+                            if(switchItem.checked){
+                                dataPoints.addPeriodicAnounceList(text);
+                            }else{
+                                dataPoints.removePeriodicAnounceList(text);
+                            }
+
+                        });
 
                         var textItem = Qt.createQmlObject(
                            "import QtQuick 2.15; Text { text: '" + text + "'; color: 'white'; style: Text.Normal; focus: false; font.weight: Font.Bold; font.family: 'Verdana'; font.pixelSize: 12}",

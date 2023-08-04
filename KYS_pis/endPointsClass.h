@@ -103,7 +103,7 @@ public:
     QList<station> currentLineStations;
     QList<QString> currentViewFour;
     QList<videos> videoList;
-
+    QList<anounce*> periodicAnounceList;
     explicit endPointsClass(QObject *parent = nullptr);
     ~endPointsClass();
 
@@ -346,7 +346,9 @@ public slots:
 
     QList<QString> getAnounceList(QString path);
 
-
+    /*Periodic Anounce*/
+    void addPeriodicAnounceList(QString anounceAdd);
+    void removePeriodicAnounceList(QString anounceRemove);
     /*Application functions*/
 private:
     bool m_stateNoFolderFound;
@@ -648,7 +650,36 @@ inline QList<QString> endPointsClass::getAnounceList(QString path)
     return anounceList;
 }
 
+inline void endPointsClass::addPeriodicAnounceList(QString anounceAdd)
+{
+    endPointsClass::anounce *newanounce = new endPointsClass::anounce ;
+    newanounce->name = anounceAdd;
+    newanounce->played =false;
+    this->periodicAnounceList.append(newanounce);
+    qDebug()<<"anonslar : ";
+    for(endPointsClass::anounce *member : this->periodicAnounceList){
+        qDebug()<<member->name;
+    }
+}
 
+inline void endPointsClass::removePeriodicAnounceList(QString anounceRemove)
+{
+    unsigned index = 0;
+    bool find = false;
+    for(endPointsClass::anounce *member : this->periodicAnounceList){
+        if(member->name == anounceRemove){
+            find = true;
+            index = this->periodicAnounceList.indexOf(member);
+        }
+    }
+    if(find){
+        this->periodicAnounceList.removeAt(index);
+    }
+    qDebug()<<"anonslar : ";
+    for(endPointsClass::anounce *member : this->periodicAnounceList){
+        qDebug()<<member->name;
+    }
+}
 
 inline bool endPointsClass::stateNoFolderFound() const
 {

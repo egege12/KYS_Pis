@@ -1268,6 +1268,7 @@ void workerObject::updateList()
                 sendHttpReq();
                 updateComplete = readJSON(false);   
                 this->endPoints->setErrCode("-updateList- Güncelleme işleniyor");
+                this->endPoints->setDataImported(updateComplete);
             }else{
                 this->endPoints->setErrCode("-updateList- Bağlantı sorunu veya servis çalışmadığı için güncelleme yapılamadı.");
                 updateComplete = false;
@@ -1285,7 +1286,7 @@ void workerObject::updateList()
             emit this->endPoints->updateFailed();
         }
         this->endPoints->setStateNoStationInfo(!updateComplete);
-        this->endPoints->setDataImported(updateComplete);
+
         readVideoFolder();
     }
 
@@ -1458,7 +1459,6 @@ void workerObject::confirmLineSelection()
         this->endPoints->setLineSelected(false);
         this->endPoints->setCurrentLine(this->endPoints->selectedLine.replace("_","->"));
     }
-
 }
 
 void workerObject::readSerialGPS()
