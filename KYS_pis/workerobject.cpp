@@ -1069,7 +1069,6 @@ void workerObject::rwComApp()
     //READ
     QFile appToPis("C:/appKYS_Pis/PISCom/ApptoPIS.json");
 
-
     if (appToPis.exists()) {
         if (!appToPis.open(QIODevice::ReadOnly)) {
             this->endPoints->setErrCode("-rwComApp-ApptoPIS.json dosyası okunamadı,APP ile haberleşme sağlanamaz");
@@ -1079,20 +1078,7 @@ void workerObject::rwComApp()
         QJsonDocument IIDataJson = QJsonDocument::fromJson(IIdata);
         if(!IIDataJson.isObject()){
             this->endPoints->setErrCode("-rwComApp-ApptoPIS.json formatı uygun değil");
-            //if (appToPis.open(QIODevice::WriteOnly)) {
-            //    QJsonObject fixedObject;
-            //    fixedObject.insert("VehicleID",0);
-            //    fixedObject.insert("LifeSign",0);
-            //    fixedObject.insert("GPSOk",false);
-            //    fixedObject.insert("GPSLongtitude",0);
-            //    fixedObject.insert("GPSLatitude",0);
-            //    fixedObject.insert("VehicleSpeed",0);
-            //    fixedObject.insert("AnyDoorOpen",true);
-            //    fixedObject.insert("ProgressUpdate",true);
-            //    QJsonDocument QJsonDocument(fixedObject);
-            //    appToPis.write(QJsonDocument.toJson());
-            //    appToPis.close();
-            //}
+
         }else{
             QJsonObject IIDataObj = IIDataJson.object();
             if(IIDataObj.contains("LifeSign")){
@@ -1142,20 +1128,6 @@ void workerObject::rwComApp()
 
     }else{
         this->endPoints->setErrCode("-rwComApp-ApptoPIS.json dosyası yok,APP ile haberleşme sağlanamaz");
-        //if (appToPis.open(QIODevice::WriteOnly)) {
-        //    QJsonObject fixedObject;
-        //    fixedObject.insert("VehicleID",0);
-        //    fixedObject.insert("LifeSign",0);
-        //    fixedObject.insert("GPSOk","false");
-        //    fixedObject.insert("GPSLongtitude",0);
-        //    fixedObject.insert("GPSLatitude",0);
-        //    fixedObject.insert("VehicleSpeed",0);
-        //    fixedObject.insert("AnyDoorOpen","true");
-        //    fixedObject.insert("ProgressUpdate","true");
-        //    QJsonDocument QJsonDocument(fixedObject);
-        //    appToPis.write(QJsonDocument.toJson());
-        //    appToPis.close();
-        //}
     }
 
     //WRITE
@@ -1212,6 +1184,7 @@ void workerObject::cycleCall()
     this->endPoints->ioCom.ActiveStationId = this->endPoints->currentStation().toUInt();
     this->endPoints->ioCom.ActiveAnounce=this->endPoints->activeAnounce();
     this->endPoints->ioCom.ActiveCommercial=this->endPoints->activeCommercial();
+    this->endPoints->ioCom.GPSOk=!this->endPoints->stateNoGpsInfo();
     //Use communication parameters
     this->endPoints->setactualLatitude(QString::number(this->endPoints->ioCom.GPSLatitude));
     this->endPoints->setactualLongitude(QString::number(this->endPoints->ioCom.GPSLongtitude));

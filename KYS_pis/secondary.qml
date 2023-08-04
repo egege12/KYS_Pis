@@ -78,7 +78,7 @@ Window {
             color: "transparent"
             MouseArea{
                 anchors.fill: parent
-                onClicked: {
+                onPressAndHold: {
                     Qt.quit()
                 }
             }
