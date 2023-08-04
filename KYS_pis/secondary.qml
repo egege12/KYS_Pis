@@ -490,8 +490,8 @@ Window {
             if(!audioPaused){
                 if(playerSound.source !==""){
                     playerSound.play();
-                    dataPoints.logMediaPlay(playerSound.source)
                 }
+                dataPoints.logMediaPlay(playerSound.source)
             }
         }
 

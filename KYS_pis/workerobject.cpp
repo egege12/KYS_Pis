@@ -53,7 +53,7 @@ workerObject::~workerObject()
 bool workerObject::checkConnection()
 {
 QNetworkAccessManager manager;
-QNetworkRequest request(QUrl("https://www.google.com"));
+QNetworkRequest request(QUrl("https://www.google.com.tr"));
 
 QNetworkReply *reply = manager.get(request);
 QEventLoop loop1;
@@ -1145,7 +1145,6 @@ void workerObject::rwComApp()
         sendObject.insert("LifeSign",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.LifeSign))));
         sendObject.insert("VehicleID",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.VehicleID))));
         sendObject.insert("ActiveLineInfo",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.ActiveLineInfo))));
-        sendObject.insert("ActiveDirection",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.ActiveDirection))));
         sendObject.insert("ActiveStation",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.ActiveStation))));
         sendObject.insert("ActiveStationId",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.ActiveStationId))));
         sendObject.insert("NextStation",(QJsonValue::fromVariant(QVariant::fromValue(this->endPoints->ioCom.NextStation))));
@@ -1185,6 +1184,7 @@ void workerObject::cycleCall()
     this->endPoints->ioCom.ActiveAnounce=this->endPoints->activeAnounce();
     this->endPoints->ioCom.ActiveCommercial=this->endPoints->activeCommercial();
     this->endPoints->ioCom.GPSOk=!this->endPoints->stateNoGpsInfo();
+    this->endPoints->ioCom.ActiveLineInfo=this->endPoints->currentLine();
     //Use communication parameters
     this->endPoints->setactualLatitude(QString::number(this->endPoints->ioCom.GPSLatitude));
     this->endPoints->setactualLongitude(QString::number(this->endPoints->ioCom.GPSLongtitude));
@@ -1266,7 +1266,7 @@ void workerObject::updateList()
             if(!((processBlockedService = !(checkConnection())) || (processBlockedConnection= !(checkService())))){
                 this->endPoints->setDataImported(false);
                 sendHttpReq();
-                updateComplete = readJSON(false);
+                updateComplete = readJSON(false);   
                 this->endPoints->setErrCode("-updateList- Güncelleme işleniyor");
             }else{
                 this->endPoints->setErrCode("-updateList- Bağlantı sorunu veya servis çalışmadığı için güncelleme yapılamadı.");
@@ -1429,27 +1429,25 @@ void workerObject::mainPIS()
 }
 void workerObject::handleLineSelection()
 {
-    if(this->endPoints->lineSelected()){
-            qDebug()<<"handleLineSelection çağırıldı lineselected false";
-        if(this->endPoints->stateNoGpsInfo()){
-            beginSpecificStation(this->endPoints->currentLineStations.at(0).id);
-            this->endPoints->setLineSelected(false);
-            this->endPoints->setCurrentLine(this->endPoints->selectedLine.replace("_","->"));
-        }else{
+    if(this->endPoints->lineSelected() && this->endPoints->dataImported()){
+            qDebug()<<"handleLineSelection çağırıldı";
+
             //qDebug()<<"handlelineselection - else";
             double minDistance = std::numeric_limits<double>::max(); // Çok büyük bir başlangıç değeri
             endPointsClass::station searchItem;
-
-            for (const endPointsClass::station Obj : this->endPoints->currentLineStations) {
-                double currentDistance = calculateDistance(Obj.latitude.toDouble(), Obj.longitude.toDouble(), this->endPoints->actualLatitude().toDouble(), this->endPoints->actualLongitude().toDouble());
-                if (currentDistance < minDistance) {
-                    minDistance = currentDistance;
-                    searchItem = Obj;
+            if(this->endPoints->stateNoGpsInfo()){
+                 this->endPoints->getConfirmationCurrentStation(this->endPoints->currentLineStations.at(0).id);
+            }else{
+                for (const endPointsClass::station Obj : this->endPoints->currentLineStations) {
+                    double currentDistance = calculateDistance(Obj.latitude.toDouble(), Obj.longitude.toDouble(), this->endPoints->actualLatitude().toDouble(), this->endPoints->actualLongitude().toDouble());
+                    if (currentDistance < minDistance) {
+                        minDistance = currentDistance;
+                        searchItem = Obj;
+                    }
                 }
+                //qDebug()<<"İstasyon ID'si "<<searchItem.id;
+                this->endPoints->getConfirmationCurrentStation(searchItem.id);
             }
-            //qDebug()<<"İstasyon ID'si "<<searchItem.id;
-            this->endPoints->getConfirmationCurrentStation(searchItem.id);
-        }
     }
 }
 

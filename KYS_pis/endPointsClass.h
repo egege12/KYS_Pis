@@ -61,6 +61,7 @@ class endPointsClass: public QObject{
     Q_PROPERTY(QString playSoundStations READ playSoundStations WRITE setPlaySoundStations NOTIFY playSoundStationsChanged)
     Q_PROPERTY(bool pauseAnounce READ pauseAnounce WRITE setPauseAnounce NOTIFY pauseAnounceChanged)
     Q_PROPERTY(QString periodOfAnounce READ periodOfAnounce WRITE setPeriodOfAnounce NOTIFY periodOfAnounceChanged)
+    Q_PROPERTY(bool periodicalAnounceAllowed READ periodicalAnounceAllowed WRITE setPeriodicalAnounceAllowed NOTIFY periodicalAnounceAllowedChanged)
 public:
     struct IIData{
         unsigned VehicleID;
@@ -73,8 +74,7 @@ public:
     struct IOData{
         unsigned LifeSign;
         unsigned VehicleID;
-        unsigned ActiveLineInfo;
-        unsigned ActiveDirection;
+        QString ActiveLineInfo;
         QString ActiveStation;
         unsigned ActiveStationId;
         QString NextStation;
@@ -84,6 +84,10 @@ public:
         bool GPSOk;
         double GPSLongtitude;
         double GPSLatitude;
+    };
+    struct anounce{
+        QString name;
+        bool played;
     };
 
     IIData iiCom;
@@ -218,6 +222,9 @@ public:
     unsigned int lifeSign() const;
     void setLifeSign(unsigned int newLifeSign);
 
+    bool periodicalAnounceAllowed() const;
+    void setPeriodicalAnounceAllowed(bool newPeriodicalAnounceAllowed);
+
 signals:
     void stateNoFolderFoundChanged();
 
@@ -310,6 +317,8 @@ signals:
 
     void lifeSignChanged();
 
+    void periodicalAnounceAllowedChanged();
+
 public slots:
     void clearList();
     /*Application functions*/
@@ -375,6 +384,7 @@ private:
     QString m_activeCommercial;
     QString m_activeAnounce;
     unsigned int m_lifeSign;
+    bool m_periodicalAnounceAllowed;
 };
 struct  endPointsClass::station{
     QString id;
@@ -398,12 +408,11 @@ inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
     ioCom.VehicleID =0;
     ioCom.ActiveAnounce="Aktif Degil";
     ioCom.ActiveCommercial="Aktif Degil";
-    ioCom.ActiveLineInfo= 0;
+    ioCom.ActiveLineInfo= "Seçilmedi";
     ioCom.LifeSign=0;
     ioCom.ActiveStation="Yok";
     ioCom.NextStationId=0;
     ioCom.ActiveStationId=0;
-    ioCom.ActiveDirection=0;
     ioCom.NextStation="";
     ioCom.GPSOk=false;
     ioCom.GPSLongtitude=0;
@@ -558,24 +567,34 @@ inline QString endPointsClass::getStationName(QString stationID)
 
 inline void endPointsClass::logVideoPlay(QString mediaId)
 {
+    QString text = "";
     for (const videos& video : this->videoList) {
         if(video.id==mediaId){
-            QString text= video.description;
+            text= video.description;
             this->setErrCode(text.remove("\"")+" isimli medya oynatılıyor");
             setActiveCommercial(text.remove("\""));
         }
         //qDebug()<<video.description;
+    }
+    if(text !=""){
+        this->setErrCode(text.remove("\"")+" isimli medya oynatılıyor");
+    }else{
+         this->setErrCode(mediaId+" dosya isimli medya oynatılıyor, medya bilgisi yer almıyor.");
     }
 
 }
 
 inline void endPointsClass::logMediaPlay(QString mediaName)
 {
-    QString data = mediaName.split("/").last().remove(".mp3");
-    if(!data.isEmpty()){
-        this->setErrCode(data+" isimli ses dosyası oynatıldı.");
-        setActiveCommercial(data);
+
+    if(!mediaName.isEmpty()){
+        QString data = mediaName.split("/").last().remove(".mp3");
+        this->setErrCode(data+" isimli ses dosyası oynatılıyor.");
+        setActiveAnounce(data);
+    }else{
+        setActiveAnounce("");
     }
+
 
 }
 
@@ -1087,12 +1106,11 @@ inline void endPointsClass::clearList()
     ioCom.VehicleID =0;
     ioCom.ActiveAnounce="Aktif Degil";
     ioCom.ActiveCommercial="Aktif Degil";
-    ioCom.ActiveLineInfo= 0;
+    ioCom.ActiveLineInfo= "Seçilmedi";
     ioCom.LifeSign=0;
     ioCom.ActiveStation="Yok";
     ioCom.NextStationId=0;
     ioCom.ActiveStationId=0;
-    ioCom.ActiveDirection=0;
     ioCom.NextStation="";
     iiCom.VehicleID=0;
     iiCom.LifeSign=0;
@@ -1168,4 +1186,18 @@ inline void endPointsClass::setLifeSign(unsigned int newLifeSign)
     emit lifeSignChanged();
 }
 
+
+
+inline bool endPointsClass::periodicalAnounceAllowed() const
+{
+    return m_periodicalAnounceAllowed;
+}
+
+inline void endPointsClass::setPeriodicalAnounceAllowed(bool newPeriodicalAnounceAllowed)
+{
+    if (m_periodicalAnounceAllowed == newPeriodicalAnounceAllowed)
+        return;
+    m_periodicalAnounceAllowed = newPeriodicalAnounceAllowed;
+    emit periodicalAnounceAllowedChanged();
+}
 #endif // ENDPOINTSCLASS_H

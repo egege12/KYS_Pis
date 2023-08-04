@@ -75,7 +75,11 @@ Item {
                 }
             }
         }
-
+        FolderListModel {
+            id: folderModelAnounce
+            folder: "file:///C:/appKYS_Pis/PISSpecialAnounce"
+            nameFilters: ["*.mp3"]
+        }
         ScrollView {
             id: stationsArea
             anchors.top: parent.top
@@ -157,11 +161,13 @@ Item {
                     }
                 }
                 function createBoxes() {
-                    var anounces = dataPoints.getAnounceList("C:/appKYS_Pis/PISSpecialAnounce")
-                    var linesArray = anounces
+
+                    var linesArray =  dataPoints.getAnounceList("C:/appKYS_Pis/PISSpecialAnounce")
                     for (var j = 0; j < linesArray.length; j++) {
                         createBox(linesArray[j])
                     }
+
+
                 }
                 Component.onCompleted: createBoxes()
             }
