@@ -16,8 +16,9 @@
 #include <QEventLoop>
 #include <iterator>
 #include <QtMath>
-
-#define COM_INTERVAL 1000
+#include <QFileSystemWatcher>
+#include <QTime>
+#define COM_INTERVAL 500
 #define CYCLETIMER_INTERVAL 500
 #define LOG_SAVE_COUNTER 10
 #define MIN_LOG_DEL_SIZE 104857600
@@ -73,6 +74,7 @@ if (reply->error() == QNetworkReply::NoError) {
     // İnternet bağlantısı yok veya erişim hatası
         if(this->endPoints->stateNetwork()){
             this->endPoints->setErrCode("-checkConnection- İnternet bağlantısı yok");
+            this->endPoints->setErrCode("Hata kodu : " + QString::number(reply->error()));
         }
         this->endPoints->setStateNetwork(false);
         delete reply;
@@ -286,6 +288,51 @@ void workerObject::readVideoFolder()
         emit endPoints->videoFolderUpdated();
 }
 
+void workerObject::readAnounceFolder()
+{
+        QString path = "C:/appKYS_Pis/PISSpecialAnounce";
+        QDir directory(path);
+        if (directory.exists()) {
+           this->endPoints->anounceList.clear();
+           QStringList filters;
+           filters << "*.mp3";
+           directory.setNameFilters(filters);
+
+           QStringList fileList = directory.entryList();
+           for ( QString &fileName : fileList) {
+               this->endPoints->anounceList.append(fileName.replace(".mp3",""));
+               bool itemFound = false;
+               for(endPointsClass::anounce *item : this->endPoints->periodicAnounceList){
+                    if(item->name == fileName.replace(".mp3","")){
+                        itemFound = true;
+                    }
+               }
+               if(itemFound!=false){
+                    endPointsClass::anounce *newItem = new endPointsClass::anounce;
+                    newItem->name = fileName.replace(".mp3","");
+                    newItem->lastPlay = QTime::currentTime();
+                    newItem->period = "";
+                    newItem->periodical = false;
+                    this->endPoints->periodicAnounceList.append(newItem);
+               }
+           }
+           for ( endPointsClass::anounce *item : this->endPoints->periodicAnounceList ) {
+               bool itemFound = false;
+               for(QString &fileName : fileList){
+                    if(item->name == fileName.replace(".mp3","")){
+                        itemFound = true;
+                    }
+               }
+               if(itemFound!=false){
+                    delete item;
+                    this->endPoints->periodicAnounceList.removeOne(item);
+               }
+           }
+
+        }
+        emit this->endPoints->anounceFolderUpdated();
+}
+
 void workerObject::checkAudioFolder()
 {
         QList<QString> keys;
@@ -474,6 +521,7 @@ void workerObject::saveLogs()
            directory.mkpath(path);
            this->endPoints->setErrCode("PISLog mevcut değil, oluşturuldu");
         }
+        deleteOldestFiles("C:/appKYS_Pis/PISLog");
     }
 
     QString path= QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
@@ -488,7 +536,7 @@ void workerObject::saveLogs()
         directory.mkpath(path+"/appKYS_Pis/Log");
         this->endPoints->setErrCode("log dosyası bulunamadı ve oluşturuldu.");
     }
-
+    deleteOldestFiles(path+"/appKYS_Pis/Log");
 
     QFile logFile1(path+"/appKYS_Pis/Log/"+formattedDateTime+"_logs.PISLog");
     if(logFile1.exists()){
@@ -551,21 +599,21 @@ void workerObject::deleteOldestFiles(QString folderPath)
     QDir folder(folderPath);
     qint64 totalSize = 0;
 
-    QFileInfoList fileInfoList = folder.entryInfoList(QDir::Files | QDir::NoDotAndDotDot, QDir::Time);
-
+    QFileInfoList fileInfoListReverse = folder.entryInfoList(QDir::Files | QDir::NoDotAndDotDot, QDir::Time);
+    QFileInfoList fileInfoList;
+    fileInfoList.reserve(fileInfoListReverse.size());
+    std::reverse_copy(fileInfoListReverse.begin(),fileInfoListReverse.end(),std::back_inserter(fileInfoList));
     for (const QFileInfo& fileInfo : fileInfoList) {
         totalSize += fileInfo.size();
     }
 
-    this->endPoints->setErrCode("Klasör boyutu:" + QString::number(totalSize / (1024 * 1024)) + "MB");
-
-        if (totalSize > MAX_LOG_SIZE) {
-    this->endPoints->setErrCode( "Klasör boyutu MAX_LOG_SIZE'ı geçti!");
+    if (totalSize > MAX_LOG_SIZE) {
+    this->endPoints->setErrCode( "Klasör boyutu "+QString::number(MAX_LOG_SIZE)+"'ı geçti!");
     qint64 sizeToDelete = totalSize - MAX_LOG_SIZE;
     int deletedFilesCount = 0;
 
     for (const QFileInfo& fileInfo : fileInfoList) {
-        if (fileInfo.isFile() && fileInfo.size() > MIN_LOG_DEL_SIZE) {
+        if (fileInfo.isFile()) {
             this->endPoints->setErrCode("Dosya siliniyor:" + fileInfo.fileName());
             if (QFile::remove(fileInfo.filePath())) {
                totalSize -= fileInfo.size();
@@ -575,7 +623,7 @@ void workerObject::deleteOldestFiles(QString folderPath)
               this->endPoints->setErrCode("Dosya silinirken bir hata oluştu.");
             }
             // Klasör boyutu hedefi aştıysa döngüyü sonlandır
-            if (totalSize <= MAX_LOG_SIZE) {
+            if ((totalSize + MIN_LOG_DEL_SIZE)<= MAX_LOG_SIZE) {
                break;
             }
         }
@@ -648,12 +696,38 @@ void workerObject::startObject()
     }else{
         serialPortFailed=false;
     }
+
+    QString folderPathVideo = "C:/appKYS_Pis/PISVideos";
+
+    watcherVideoFolder = new QFileSystemWatcher;
+    QDir folderVideo(folderPathVideo);
+    QStringList fileListVideo = folderVideo.entryList(QDir::Files);
+    watcherVideoFolder->addPath(folderPathVideo);
+    foreach (QString file, fileListVideo) {
+        watcherVideoFolder->addPath(folderVideo.absoluteFilePath(file));
+    }
+    QObject::connect(watcherVideoFolder, &QFileSystemWatcher::fileChanged,this,&workerObject::readVideoFolder,Qt::AutoConnection);
+    QObject::connect(watcherVideoFolder, &QFileSystemWatcher::directoryChanged,this,&workerObject::readVideoFolder,Qt::AutoConnection);
+
+    QString folderPathAnounce = "C:/appKYS_Pis/PISSpecialAnounce";
+
+    QDir folderAnounce(folderPathAnounce);
+    QStringList fileListAnounce = folderAnounce.entryList(QDir::Files);
+    watcherAnounceFolder = new QFileSystemWatcher;
+    watcherAnounceFolder->addPath(folderPathAnounce);
+    foreach (QString file, fileListAnounce) {
+        watcherAnounceFolder->addPath(folderAnounce.absoluteFilePath(file));
+    }
+    QObject::connect(watcherAnounceFolder, &QFileSystemWatcher::fileChanged,this,&workerObject::readAnounceFolder,Qt::AutoConnection);
+    QObject::connect(watcherAnounceFolder, &QFileSystemWatcher::directoryChanged,this,&workerObject::readAnounceFolder,Qt::AutoConnection);
+
     QObject::connect(serialPort, &QSerialPort::readyRead,this,&workerObject::readSerialGPS,Qt::AutoConnection);
     QObject::connect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::updateList,Qt::AutoConnection);
     QObject::connect(this->endPoints,&endPointsClass::lineSelectedChanged,this,&workerObject::handleLineSelection,Qt::AutoConnection);
     QObject::connect(this->endPoints,&endPointsClass::StationConfirmedChanged,this,&workerObject::confirmLineSelection,Qt::AutoConnection);
     readStations();
     readVideoFolder();
+    readAnounceFolder();
 }
 
 void workerObject::stopObject()
@@ -668,7 +742,13 @@ void workerObject::stopObject()
     delete timer2;
     delete timer3;
     delete  this->serialPort;
+    delete watcherAnounceFolder;
+    delete watcherVideoFolder;
     //Nothing here
+    QObject::disconnect(watcherVideoFolder, &QFileSystemWatcher::fileChanged,this,&workerObject::readVideoFolder);
+    QObject::disconnect(watcherVideoFolder, &QFileSystemWatcher::directoryChanged,this,&workerObject::readVideoFolder);
+    QObject::disconnect(watcherAnounceFolder, &QFileSystemWatcher::fileChanged,this,&workerObject::readAnounceFolder);
+    QObject::disconnect(watcherAnounceFolder, &QFileSystemWatcher::directoryChanged,this,&workerObject::readAnounceFolder);
     QObject::disconnect(this->endPoints,&endPointsClass::updateStationsChanged,this,&workerObject::updateList);
     QObject::disconnect(serialPort, &QSerialPort::readyRead,this,&workerObject::readSerialGPS);
 
@@ -1476,8 +1556,8 @@ void workerObject::readSerialGPS()
         }
         this->gnggaSplitter(receivedData);
         receivedDataGNGGAFlag = false;
-        this->endPoints->setErrCode("Gelen veri:"+ receivedData);
-        this->endPoints->setErrCode("Enlem:"+ QString::number(this->endPoints->ioCom.GPSLatitude) +"Boylam"+QString::number(this->endPoints->ioCom.GPSLongtitude));
+        //this->endPoints->setErrCode("Gelen veri:"+ receivedData);
+        //this->endPoints->setErrCode("Enlem:"+ QString::number(this->endPoints->ioCom.GPSLatitude) +"Boylam"+QString::number(this->endPoints->ioCom.GPSLongtitude));
     }else if(receivedDataGNGGAFlag){
         receivedData.append(data);
     }

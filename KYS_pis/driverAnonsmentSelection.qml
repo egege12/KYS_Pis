@@ -27,54 +27,7 @@ Item {
                 stack.pop("qrc:/driverMidArea.qml");
             }
         }
-        Rectangle{
-            id:configurationArea
-            height: 50
-            anchors.bottom:parent.bottom
-            anchors.right:parent.right
-            anchors.left:buttonBack.right
-            anchors.leftMargin:5
-            color:"transparent"
-            border.color: "gray"
-            border.width: 1
-            Text{
-                anchors.left:parent.left
-                anchors.leftMargin:15
-                anchors.verticalCenter: parent.verticalCenter
-                text: "Otomatik anonslar seçili sürede bir sırasıyla oynatılır."
-                font.pixelSize: 14
-                elide: Text.ElideRight
-                antialiasing: true
-                font.hintingPreference: Font.PreferNoHinting
-                style: Text.Normal
-                focus: false
-                font.weight: Font.Medium
-                font.family: "Verdana"
-                color: "white"
-            }
-            ComboBox{
-                id:anounceCycleComboBox
-                width: 200
-                height: 30
-                editable:false
-                anchors.right:parent.right
-                anchors.rightMargin:15
-                anchors.verticalCenter: parent.verticalCenter
-                displayText: dataPoints.periodOfAnounce
-                visible: true
-                model:
-                    [   "30 Dakika" ,
-                        "45 Dakika" ,
-                        "1 Saat"    ,
-                        "2 Saat"    ,
-                        "3 Saat"    ,
-                        "Günde 1"   ,]
-                onActivated: {
-                    dataPoints.periodOfAnounce = currentText;
-                    displayText=currentText;
-                }
-            }
-        }
+
         FolderListModel {
             id: folderModelAnounce
             folder: "file:///C:/appKYS_Pis/PISSpecialAnounce"
@@ -83,7 +36,7 @@ Item {
         ScrollView {
             id: stationsArea
             anchors.top: parent.top
-            anchors.bottom: configurationArea.top
+            anchors.bottom: parent.bottom
             anchors.left: buttonBack.right
             anchors.leftMargin:5
             anchors.right: parent.right
@@ -94,6 +47,10 @@ Item {
                 id:grid
                 columns: 2
                 spacing: 5
+
+                 property var createdBoxes: [] // Kutu nesnelerini tutacak dizi
+
+
                 function createBox(text) {
                     var rectWidth = (stationsArea.width / 2);
                     var rectHeight = (stationsArea.height / 4) ;
@@ -146,38 +103,74 @@ Item {
                             }
 
                         });
-
-                        var textItem = Qt.createQmlObject(
-                           "import QtQuick 2.15; Text { text: '" + text + "'; color: 'white'; style: Text.Normal; focus: false; font.weight: Font.Bold; font.family: 'Verdana'; font.pixelSize: 12}",
-                            rect
-                        );
-
-                        textItem.anchors.left = rect.left;
-                        textItem.anchors.top = rect.top;
-                        textItem.anchors.leftMargin = 5;
-                        textItem.anchors.topMargin = 1;
-
-                        button.anchors.verticalCenter = rect.verticalCenter;
-                        button.anchors.right = rect.right;
-                        button.anchors.rightMargin = 5;
                         switchItem.anchors.verticalCenter = rect.verticalCenter;
                         switchItem.anchors.left = rect.left;
                         switchItem.anchors.leftMargin = 10;
                         switchItem.checked = false;
+                        var textItem = Qt.createQmlObject(
+                           "import QtQuick 2.15; Text { text: '" + text + "'; color: 'white'; style: Text.Normal; focus: false; font.weight: Font.Bold; font.family: 'Verdana'; font.pixelSize: 12}",
+                            rect
+                        );
+                        textItem.anchors.left = rect.left;
+                        textItem.anchors.top = rect.top;
+                        textItem.anchors.leftMargin = 5;
+                        textItem.anchors.topMargin = 1;
+                        var comboBox = Qt.createQmlObject(
+                                    "import QtQuick.Controls 2.15; ComboBox { }",
+                                    rect
+                                );
+                        comboBox.width = 100;
+                        comboBox.height = 30;
+                        comboBox.anchors.left = switchItem.right; // ComboBox'ı button'un sol tarafına yerleştirin
+                        comboBox.anchors.leftMargin = 5;
+                        comboBox.anchors.verticalCenter = rect.verticalCenter;
+                        comboBox.model = [
+                            "30 Dakika",
+                            "45 Dakika",
+                            "1 Saat",
+                            "2 Saat",
+                            "3 Saat",
+                            "Günde 1"
+                        ];
+                        comboBox.onActivated.connect(function(){
+                            comboBox.displayText=comboBox.currentText;
+                        });
+
+                        button.anchors.verticalCenter = rect.verticalCenter;
+                        button.anchors.right = rect.right;
+                        button.anchors.rightMargin = 5;
+                        createdBoxes.push(rect);
                     } else {
                         console.log("Error loading MenuButton.qml")
                     }
                 }
                 function createBoxes() {
 
-                    var linesArray =  dataPoints.getAnounceList("C:/appKYS_Pis/PISSpecialAnounce")
+                    var linesArray =  dataPoints.getAnounceList();
                     for (var j = 0; j < linesArray.length; j++) {
                         createBox(linesArray[j])
                     }
 
 
                 }
-                Component.onCompleted: createBoxes()
+                function clearBoxes() {
+                    for (var i = 0; i < createdBoxes.length; i++) {
+                        createdBoxes[i].destroy() // Oluşturulmuş kutuları yok et
+                    }
+                    createdBoxes = [] // Diziyi boşalt
+                }
+
+            }
+            Connections {
+            target: dataPoints
+                onAnounceFolderUpdated: {
+                    grid.clearBoxes();
+                    grid.createBoxes();
+                    console.log("buradaaayım")
+                }
+            }
+            Component.onCompleted: {
+                grid.createBoxes() ;
             }
         }
 

@@ -115,7 +115,6 @@ Item {
                     var spacingX = 20
                     var spacingY = 20
 
-
                         for (var j = 0; j < lineChunks.length; j++) {
                             createBox(lineChunks[j])
                         }
@@ -123,7 +122,6 @@ Item {
                 }
             }
             }
-
 
             Connections {
                 target: dataPoints

@@ -18,11 +18,11 @@ Window {
         if(dataPoints.stateDispTextOnStationArea){
             rightSide.visible=false;
             rightSideScreenSaver.visible=true;
-            console.log(rightSide.width+" "+rightSide.height);
+            //console.log(rightSide.width+" "+rightSide.height);
         }else{
             rightSide.visible=true;
             rightSideScreenSaver.visible=false;
-            console.log("visible true");
+            //console.log("visible true");
         }
     }
     flags: Qt.FramelessWindowHint | Qt.Window | Qt.MaximizeUsingFullscreenGeometryHint
@@ -433,48 +433,48 @@ Window {
                 }
                 switch (player.status) {
                     case MediaPlayer.NoMedia:
-                        console.log("NoMedia");
+                        //console.log("NoMedia");
                         //dataPoints.errCode="Medya yok"
                         videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.Loading:
-                        console.log("Loading");
+                        //console.log("Loading");
                         //dataPoints.errCode="yükleniyor."
                         videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.Loaded:
-                        console.log("Loaded");
+                        //console.log("Loaded");
                         //dataPoints.errCode="yüklendi."
                         videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.Buffering:
-                        console.log("Buffering");
+                        //console.log("Buffering");
                         dataPoints.setVideoAvailable();
                         //dataPoints.errCode="Stoklanıyor"
                         videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.Stalled:
-                        console.log("Stalled");
+                        //console.log("Stalled");
                         //dataPoints.errCode="Video çöktü"
                         break;
                     case MediaPlayer.Buffered:
-                        console.log("Buffered");
+                        //console.log("Buffered");
                         dataPoints.setVideoAvailable();
                         //dataPoints.errCode="Buffer yapıldı"
                         videoArea.endOfMediaCounter=0;
                         break;
                     case MediaPlayer.EndOfMedia:
-                        console.log("EndOfMedia");
+                        //console.log("EndOfMedia");
                         //dataPoints.errCode="Medya sonu"
                         videoArea.endOfMediaCounter= 1+videoArea.endOfMediaCounter
                         break;
                     case MediaPlayer.InvalidMedia:
-                        console.log("InvalidMedia");
+                        //console.log("InvalidMedia");
                         //dataPoints.errCode="Geçersiz Medya"
                         break;
                     case MediaPlayer.UnknownStatus:
                         //dataPoints.errCode="Bilinmeyen durum"
-                        console.log("UnknownStatus");
+                        //console.log("UnknownStatus");
                         break;
                 }
             }
@@ -482,7 +482,7 @@ Window {
 
             onSourceChanged: {
                 if(player.source == ""){
-                    console.log("boş video yolu")
+                    //console.log("boş video yolu")
                 }else{
                     dataPoints.logVideoPlay(folderModel.get(videoArea.mediaIndex,"fileName"));
                     player.play();
@@ -590,11 +590,11 @@ Window {
             if(dataPoints.stateDispTextOnStationArea){
                 rightSide.visible=false;
                 rightSideScreenSaver.visible=true;
-                console.log(rightSide.width+" "+rightSide.height);
+                //console.log(rightSide.width+" "+rightSide.height);
             }else{
                 rightSide.visible=true;
                 rightSideScreenSaver.visible=false;
-                console.log("visible true");
+                //console.log("visible true");
             }
         }
         onVideoFolderUpdated:{

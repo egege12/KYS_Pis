@@ -60,7 +60,6 @@ class endPointsClass: public QObject{
     Q_PROPERTY(QString playSound READ playSound WRITE setPlaySound NOTIFY playSoundChanged)
     Q_PROPERTY(QString playSoundStations READ playSoundStations WRITE setPlaySoundStations NOTIFY playSoundStationsChanged)
     Q_PROPERTY(bool pauseAnounce READ pauseAnounce WRITE setPauseAnounce NOTIFY pauseAnounceChanged)
-    Q_PROPERTY(QString periodOfAnounce READ periodOfAnounce WRITE setPeriodOfAnounce NOTIFY periodOfAnounceChanged)
     Q_PROPERTY(bool periodicalAnounceAllowed READ periodicalAnounceAllowed WRITE setPeriodicalAnounceAllowed NOTIFY periodicalAnounceAllowedChanged)
 public:
     struct IIData{
@@ -87,7 +86,9 @@ public:
     };
     struct anounce{
         QString name;
-        bool played;
+        bool periodical;
+        QString period;
+        QTime lastPlay;
     };
 
     IIData iiCom;
@@ -104,6 +105,7 @@ public:
     QList<QString> currentViewFour;
     QList<videos> videoList;
     QList<anounce*> periodicAnounceList;
+    QList<QString> anounceList;
     explicit endPointsClass(QObject *parent = nullptr);
     ~endPointsClass();
 
@@ -210,9 +212,6 @@ public:
     QString playSoundStations() const;
     void setPlaySoundStations(const QString &newPlaySoundStations);
 
-    QString periodOfAnounce() const;
-    void setPeriodOfAnounce(const QString &newPeriodOfAnounce);
-
     QString activeCommercial() const;
     void setActiveCommercial(const QString &newActiveCommercial);
 
@@ -293,6 +292,8 @@ signals:
 
     void videoFolderUpdated();
 
+    void anounceFolderUpdated();
+
     void vehicleSpeedChanged();
 
     void anyDoorOpenChanged();
@@ -308,8 +309,6 @@ signals:
     void pauseAnounceChanged();
 
     void playSoundStationsChanged();
-
-    void periodOfAnounceChanged();
 
     void activeCommercialChanged();
 
@@ -344,7 +343,7 @@ public slots:
 
     QString getPathAudio(QString stationID);
 
-    QList<QString> getAnounceList(QString path);
+    QList<QString> getAnounceList();
 
     /*Periodic Anounce*/
     void addPeriodicAnounceList(QString anounceAdd);
@@ -382,7 +381,6 @@ private:
     QString m_playSound;
     bool m_pauseAnounce;
     QString m_playSoundStations;
-    QString m_periodOfAnounce;
     QString m_activeCommercial;
     QString m_activeAnounce;
     unsigned int m_lifeSign;
@@ -446,7 +444,6 @@ inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
      m_actualLatitude="null";
      m_comAppOK=false;
      viewLine="null";
-     setPeriodOfAnounce("Günde 1");
 }
 
 inline endPointsClass::~endPointsClass()
@@ -633,28 +630,18 @@ inline QString endPointsClass::getPathAudio(QString stationID)
     return "";
 }
 
-inline QList<QString> endPointsClass::getAnounceList(QString path)
+inline QList<QString> endPointsClass::getAnounceList()
 {
-    QList<QString> anounceList;
-    QDir directory(path);
-    if (directory.exists()) {
-        QStringList filters;
-        filters << "*.mp3";
-        directory.setNameFilters(filters);
-
-        QStringList fileList = directory.entryList();
-        for ( QString &fileName : fileList) {
-            anounceList.append(fileName.replace(".mp3",""));
-        }
-    }
-    return anounceList;
+    return this->anounceList;
 }
 
 inline void endPointsClass::addPeriodicAnounceList(QString anounceAdd)
 {
     endPointsClass::anounce *newanounce = new endPointsClass::anounce ;
     newanounce->name = anounceAdd;
-    newanounce->played =false;
+    newanounce->period ="";
+    newanounce->periodical=false;
+    newanounce->lastPlay = QTime::currentTime();
     this->periodicAnounceList.append(newanounce);
     qDebug()<<"anonslar : ";
     for(endPointsClass::anounce *member : this->periodicAnounceList){
@@ -1108,19 +1095,6 @@ inline void endPointsClass::setPlaySoundStations(const QString &newPlaySoundStat
     emit playSoundStationsChanged();
 }
 
-inline QString endPointsClass::periodOfAnounce() const
-{
-    return m_periodOfAnounce;
-}
-
-inline void endPointsClass::setPeriodOfAnounce(const QString &newPeriodOfAnounce)
-{
-    if (m_periodOfAnounce == newPeriodOfAnounce)
-        return;
-    m_periodOfAnounce = newPeriodOfAnounce;
-    emit periodOfAnounceChanged();
-}
-
 inline void endPointsClass::clearList()
 {
     QMap<QString, QList<station*>>::iterator it = allLineStations.begin();
@@ -1173,7 +1147,6 @@ inline void endPointsClass::clearList()
     m_actualLatitude="null";
     m_comAppOK=false;
     viewLine="null";
-    setPeriodOfAnounce("Günde 1");
 }
 
 

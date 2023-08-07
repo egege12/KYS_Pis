@@ -5,6 +5,7 @@
 
 #include <QObject>
 #include "endPointsClass.h"
+#include "qfilesystemwatcher.h"
 #include <QTimer>
 #include <QList>
 #include <QtSerialPort/QSerialPort>
@@ -25,6 +26,8 @@ private:
     bool serialPortFailed;
     bool GPSGNSSNotEmpty;
     QByteArray receivedData;
+    QFileSystemWatcher *watcherVideoFolder;
+    QFileSystemWatcher *watcherAnounceFolder;
     bool receivedDataGNGGAFlag;
     //Old containers
     double GPSLatitude;
@@ -65,7 +68,6 @@ public:
     bool checkFolderSpecialAnouncement();
     bool checkFileLines();
     bool checkFileJson();
-    void readVideoFolder();
     void checkAudioFolder();
 
     //If one fails cycle check starts for that
@@ -81,7 +83,8 @@ public:
 
 
 public slots:
-
+    void readVideoFolder();
+    void readAnounceFolder();
     void startObject();
     void stopObject();
     void rwComApp();

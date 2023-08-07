@@ -3,10 +3,23 @@
 #include <QThread>
 #include <QQmlContext>
 #include "workerobject.h"
-
+#include <QLocalServer>
+#include <QLocalSocket>
 
 int main(int argc, char *argv[])
 {
+
+    QLocalSocket socket;
+    socket.connectToServer("my_unique_key");
+    if (socket.waitForConnected(500)) {
+        qDebug() << "Another instance is already running.";
+        return 0;
+    }
+    QLocalServer server;
+    if (!server.listen("my_unique_key")) {
+        qDebug() << "Server could not start. Another instance is already running.";
+        return 1;
+    }
     QGuiApplication app(argc, argv);
     //Thread spread
     QThread workerThread;
