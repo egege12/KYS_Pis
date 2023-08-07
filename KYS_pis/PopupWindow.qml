@@ -51,18 +51,23 @@ Item {
                 font.pixelSize: 32
                 font.family: "Verdana"
                 wrapMode: "WordWrap"
+
             }
             Text {
                 id: textDetailWarning
                 text: popupWarning.textMessage
                 width: 250
                 height: 77
-                anchors.centerIn: parent
+                anchors.right: buttonPlus.left
+                anchors.left: buttonMinus.right
+                anchors.bottom:buttonWarning.top
+                anchors.margins:20
                 elide: Text.ElideLeft
                 horizontalAlignment: Text.AlignHCenter
                 font.pixelSize: 22
                 font.family: "Verdana"
                 wrapMode: "WordWrap"
+
             }
             MenuButton {
                 id : buttonMinus
@@ -74,7 +79,6 @@ Item {
                 buttonImageSource : "qrc:/img/minus.png"
                 radius: 1
                 disableButtonClick: false
-                buttonText: "Anonslar"
                 onButtonClicked:{popupWarning.minusClicked()
                 }
             }
@@ -88,7 +92,6 @@ Item {
                 buttonImageSource : "qrc:/img/plus.png"
                 radius: 1
                 disableButtonClick: false
-                buttonText: "Anonslar"
                 onButtonClicked:{popupWarning.plusClicked()
                 }
             }

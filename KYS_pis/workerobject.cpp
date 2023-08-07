@@ -307,7 +307,7 @@ void workerObject::readAnounceFolder()
                         itemFound = true;
                     }
                }
-               if(itemFound!=false){
+               if(!itemFound){
                     endPointsClass::anounce *newItem = new endPointsClass::anounce;
                     newItem->name = fileName.replace(".mp3","");
                     newItem->lastPlay = QTime::currentTime();
@@ -323,7 +323,7 @@ void workerObject::readAnounceFolder()
                         itemFound = true;
                     }
                }
-               if(itemFound!=false){
+               if(!itemFound){
                     delete item;
                     this->endPoints->periodicAnounceList.removeOne(item);
                }

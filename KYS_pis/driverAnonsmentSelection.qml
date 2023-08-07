@@ -112,7 +112,7 @@ Item {
                             rect
                         );
                         textItem.anchors.left = rect.left;
-                        textItem.anchors.top = rect.top;
+                        textItem.anchors.stop = rect.top;
                         textItem.anchors.leftMargin = 5;
                         textItem.anchors.topMargin = 1;
                         var comboBox = Qt.createQmlObject(
@@ -134,8 +134,9 @@ Item {
                         ];
                         comboBox.onActivated.connect(function(){
                             comboBox.displayText=comboBox.currentText;
+                            dataPoints.setPeriodofAnounceList(text,comboBox.currentText);
                         });
-
+                        comboBox.displayText=dataPoints.getPeriodofAnounceList(text);
                         button.anchors.verticalCenter = rect.verticalCenter;
                         button.anchors.right = rect.right;
                         button.anchors.rightMargin = 5;

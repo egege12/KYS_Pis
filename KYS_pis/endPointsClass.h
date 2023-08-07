@@ -348,6 +348,8 @@ public slots:
     /*Periodic Anounce*/
     void addPeriodicAnounceList(QString anounceAdd);
     void removePeriodicAnounceList(QString anounceRemove);
+    void setPeriodofAnounceList(QString anounceSet,QString period);
+    QString getPeriodofAnounceList(QString anounceGet);
     /*Application functions*/
 private:
     bool m_stateNoFolderFound;
@@ -637,35 +639,41 @@ inline QList<QString> endPointsClass::getAnounceList()
 
 inline void endPointsClass::addPeriodicAnounceList(QString anounceAdd)
 {
-    endPointsClass::anounce *newanounce = new endPointsClass::anounce ;
-    newanounce->name = anounceAdd;
-    newanounce->period ="";
-    newanounce->periodical=false;
-    newanounce->lastPlay = QTime::currentTime();
-    this->periodicAnounceList.append(newanounce);
-    qDebug()<<"anonslar : ";
     for(endPointsClass::anounce *member : this->periodicAnounceList){
-        qDebug()<<member->name;
+        if(member->name == anounceAdd){
+            member->periodical = true;
+        }
     }
 }
 
 inline void endPointsClass::removePeriodicAnounceList(QString anounceRemove)
 {
-    unsigned index = 0;
-    bool find = false;
     for(endPointsClass::anounce *member : this->periodicAnounceList){
         if(member->name == anounceRemove){
-            find = true;
-            index = this->periodicAnounceList.indexOf(member);
+            member->periodical = false;
         }
     }
-    if(find){
-        this->periodicAnounceList.removeAt(index);
-    }
-    qDebug()<<"anonslar : ";
+}
+
+inline void endPointsClass::setPeriodofAnounceList(QString anounceSet, QString period)
+{
     for(endPointsClass::anounce *member : this->periodicAnounceList){
-        qDebug()<<member->name;
+        //qDebug()<<member->name;
+        if(member->name == anounceSet){
+            member->period = period;
+            //qDebug()<<period;
+        }
     }
+}
+
+inline QString endPointsClass::getPeriodofAnounceList(QString anounceGet)
+{
+    for(endPointsClass::anounce *member : this->periodicAnounceList){
+        if(member->name == anounceGet){
+            return member->period;
+        }
+    }
+    return "Ayarlanmadı";
 }
 
 inline bool endPointsClass::stateNoFolderFound() const
