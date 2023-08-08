@@ -19,7 +19,9 @@ private:
     QTimer *timer1;
     QTimer *timer2;
     QTimer *timer3;
+    QTimer * timer4;
     QList<QString> lines;
+    QList<QString> pendingAnonunceList;
     unsigned failCounterLifeSign;
     unsigned failGPSCounter;
     QSerialPort *serialPort;
@@ -94,7 +96,7 @@ public slots:
     void confirmLineSelection();
     void readSerialGPS();
     void onTimeoutGPS();
-
+    void onAnounceControl();
 signals:
     void doneUpdate(bool updateStations);
 

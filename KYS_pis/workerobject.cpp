@@ -19,13 +19,13 @@
 #include <QFileSystemWatcher>
 #include <QTime>
 #define COM_INTERVAL 500
-#define CYCLETIMER_INTERVAL 500
+#define CYCLETIMER_INTERVAL 2000
 #define LOG_SAVE_COUNTER 10
 #define MIN_LOG_DEL_SIZE 104857600
 #define MAX_LOG_SIZE 1073741824
 #define DISTANCE_LEAVE_CURRENT_STATION 30.0 /*METER*/
 #define DISTANCE_APRROACH_CURRENT_STATION 40.0 /*METER*/
-
+#define ANOUNCE_CONTROL_INTERVAL 2000 /*Anounce Control Cycle*/
 
 workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
 {
@@ -353,7 +353,7 @@ void workerObject::checkAudioFolder()
                             //qDebug()<<b->soundURL;
                         }else{
                              this->endPoints->setErrCode("Medya bulunumadı "+audiopath);
-                            qDebug()<<"bulamadı"<<audiopath;
+                            //qDebug()<<"bulamadı"<<audiopath;
                         }
                     }
                }else{
@@ -684,6 +684,9 @@ void workerObject::startObject()
     timer3 = new QTimer(this);
     QObject::connect(timer3,&QTimer::timeout,this,&workerObject::onTimeoutGPS,Qt::AutoConnection);
     timer3->start(20000);
+    timer4 = new QTimer(this);
+    QObject::connect(timer4,&QTimer::timeout,this,&workerObject::onAnounceControl,Qt::AutoConnection);
+    timer4->start(ANOUNCE_CONTROL_INTERVAL);
     this-> serialPort = new QSerialPort;
     this->serialPort->setPortName("COM4");
     this->serialPort->setBaudRate(QSerialPort::Baud9600);
@@ -1277,19 +1280,19 @@ void workerObject::cycleCall()
         if(processBlockedConnection){
             if(checkConnection()){
                 this->readStations();
-                 qDebug()<<"processBlockedConnection";
+                 //qDebug()<<"processBlockedConnection";
             }
         }
         if(processBlockedFileLines){
             if(checkFileLines() && readLineLIST(false)){
                 this->readStations();
-                 qDebug()<<"processBlockedFileLines";
+                 //qDebug()<<"processBlockedFileLines";
             }
         }
         if(processBlockedService){
             if(checkService()){
                 this->readStations();
-                 qDebug()<<"processBlockedService";
+                 //qDebug()<<"processBlockedService";
             }
         }
     }
@@ -1297,19 +1300,20 @@ void workerObject::cycleCall()
         if(processBlockedConnection){
             if(checkConnection()){
                 this->updateList();
-                qDebug()<<"processBlockedConnection";
+                //qDebug()<<"processBlockedConnection";
             }
         }
         if(processBlockedFileLines){
+            //qDebug()<<"processBlockedFileLines";
             if(checkFileLines() && readLineLIST(false)){
                 this->updateList();
-                qDebug()<<"processBlockedFileLines";
+                //qDebug()<<"processBlockedFileLines";
             }
         }
         if(processBlockedService){
             if(checkService()){
                 this->updateList();
-                qDebug()<<"processBlockedService";
+                //qDebug()<<"processBlockedService";
             }
         }
     }
@@ -1319,13 +1323,13 @@ void workerObject::cycleCall()
     if(serialPort->isOpen()){
         if(serialPortFailed){
             serialPortFailed = false;
-            qDebug()<<"serialPort açık";
+            //qDebug()<<"serialPort açık";
         }
     }else{
         if(!serialPort->open(QIODevice::ReadOnly)){
             if(!serialPortFailed){
                 serialPortFailed = true;
-            }// qDebug()<<"serialPort açılamadı";
+            }// //qDebug()<<"serialPort açılamadı";
         }else{
             if(serialPortFailed){
                 serialPortFailed = false;
@@ -1344,7 +1348,7 @@ void workerObject::updateList()
         bool processBlockedFileLines = !readLineLIST(false);
 
         if(!processBlockedFileLines){
-            if(!((processBlockedService = !(checkConnection())) || (processBlockedConnection= !(checkService())))){
+            if(!((processBlockedConnection = !(checkConnection())) || (processBlockedService= !(checkService())))){
                 this->endPoints->setDataImported(false);
                 sendHttpReq();
                 updateComplete = readJSON(false);   
@@ -1359,18 +1363,16 @@ void workerObject::updateList()
             this->endPoints->setErrCode("-updateList- dataLines.csv bulunamadığı için güncelleme yapılamadı.");
             updateComplete = false;
         }
-        this->enableCycleCheckUpdate(!updateComplete);
+
         if(updateComplete){
             emit this->endPoints->updateSuccesfull();
-            this->endPoints->setUpdateStations(!updateComplete);
+            this->endPoints->setUpdateStations(false);
         }else{
             emit this->endPoints->updateFailed();
         }
         this->endPoints->setStateNoStationInfo(!updateComplete);
-
-        readVideoFolder();
+        this->enableCycleCheckUpdate(!updateComplete);
     }
-
 
 }
 void workerObject::beginSpecificStation(QString stationID)
@@ -1396,7 +1398,7 @@ void workerObject::beginSpecificStation(QString stationID)
 
         for(unsigned i=index;((i<index+4)&& i<this->endPoints->currentLineStations.size() );++i ){
                 this->endPoints->currentViewFour.append(this->endPoints->currentLineStations.at(i).name);
-                qDebug()<<this->endPoints->currentLineStations.at(i).name;
+                //qDebug()<<this->endPoints->currentLineStations.at(i).name;
         }
 
     emit endPoints->loadViewFour();
@@ -1512,7 +1514,7 @@ void workerObject::mainPIS()
 void workerObject::handleLineSelection()
 {
     if(this->endPoints->lineSelected() && this->endPoints->dataImported()){
-            qDebug()<<"handleLineSelection çağırıldı";
+            //qDebug()<<"handleLineSelection çağırıldı";
 
             //qDebug()<<"handlelineselection - else";
             double minDistance = std::numeric_limits<double>::max(); // Çok büyük bir başlangıç değeri
@@ -1568,4 +1570,42 @@ void workerObject::readSerialGPS()
 void workerObject::onTimeoutGPS()
 {
     serialPortFailed = true;
+}
+
+void workerObject::onAnounceControl()
+{
+    /*Add pending list if CurrentTime-lastPlayTime > period */
+    for (endPointsClass::anounce * item : this->endPoints->periodicAnounceList) {
+        int periodTime(0);
+        if(item->period == "30 Dakika"){
+            periodTime=1800;
+        }else if(item->period == "45 Dakika"){
+            periodTime=2700;
+        }else if(item->period == "1 Saat"){
+            periodTime=3600;
+        }else if(item->period == "2 Saat"){
+            periodTime=7200;
+        }else if(item->period == "3 Saat"){
+            periodTime=10800;
+        }else if(item->period == "Günde 1"){
+            periodTime=86400;
+    }
+        if(QTime::currentTime().secsTo(item->lastPlay) > periodTime){
+            if(!pendingAnonunceList.contains(item->name)){
+              pendingAnonunceList.append(item->name);
+            }
+        }
+    }
+
+    /*Check if periodic play is still active*/
+    foreach( QString itemSearch,pendingAnonunceList){
+        foreach (endPointsClass::anounce * item , this->endPoints->periodicAnounceList) {
+            if(itemSearch == item->name){
+              item->
+            }
+        }
+    }
+
+
+
 }

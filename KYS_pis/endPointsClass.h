@@ -56,7 +56,6 @@ class endPointsClass: public QObject{
     Q_PROPERTY(QString activeCommercial READ activeCommercial WRITE setActiveCommercial NOTIFY activeCommercialChanged)
     Q_PROPERTY(QString activeAnounce READ activeAnounce WRITE setActiveAnounce NOTIFY activeAnounceChanged)
 
-
     Q_PROPERTY(QString playSound READ playSound WRITE setPlaySound NOTIFY playSoundChanged)
     Q_PROPERTY(QString playSoundStations READ playSoundStations WRITE setPlaySoundStations NOTIFY playSoundStationsChanged)
     Q_PROPERTY(bool pauseAnounce READ pauseAnounce WRITE setPauseAnounce NOTIFY pauseAnounceChanged)
@@ -350,6 +349,7 @@ public slots:
     void removePeriodicAnounceList(QString anounceRemove);
     void setPeriodofAnounceList(QString anounceSet,QString period);
     QString getPeriodofAnounceList(QString anounceGet);
+    bool getAnouncePeriodActive(QString anounceGet);
     /*Application functions*/
 private:
     bool m_stateNoFolderFound;
@@ -687,6 +687,16 @@ inline QString endPointsClass::getPeriodofAnounceList(QString anounceGet)
     return "Ayarlanmadı";
 }
 
+inline bool endPointsClass::getAnouncePeriodActive(QString anounceGet)
+{
+    for(endPointsClass::anounce *member : this->periodicAnounceList){
+        if(member->name == anounceGet){
+            return member->periodical;
+        }
+    }
+    return false;
+}
+
 inline bool endPointsClass::stateNoFolderFound() const
 {
     return m_stateNoFolderFound;
@@ -811,8 +821,6 @@ inline bool endPointsClass::updateStations() const
 
 inline void endPointsClass::setUpdateStations(bool newUpdateStations)
 {
-    if (m_updateStations == newUpdateStations)
-        return;
     m_updateStations = newUpdateStations;
     emit updateStationsChanged();
 }

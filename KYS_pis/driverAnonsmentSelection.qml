@@ -106,7 +106,7 @@ Item {
                         switchItem.anchors.verticalCenter = rect.verticalCenter;
                         switchItem.anchors.left = rect.left;
                         switchItem.anchors.leftMargin = 10;
-                        switchItem.checked = false;
+                        switchItem.checked = dataPoints.getAnouncePeriodActive(text);
                         var textItem = Qt.createQmlObject(
                            "import QtQuick 2.15; Text { text: '" + text + "'; color: 'white'; style: Text.Normal; focus: false; font.weight: Font.Bold; font.family: 'Verdana'; font.pixelSize: 12}",
                             rect
@@ -167,7 +167,6 @@ Item {
                 onAnounceFolderUpdated: {
                     grid.clearBoxes();
                     grid.createBoxes();
-                    console.log("buradaaayım")
                 }
             }
             Component.onCompleted: {

@@ -390,7 +390,7 @@ Window {
             height: parent.height
             anchors.centerIn: parent
             horizontalAlignment: Text.AlignHCenter
-            source:"qrc:/img/nicetrip_1.png"
+            source:"qrc:/img/nicetrip_2.png"
             fillMode: Image.PreserveAspectFit
             visible:false
             z:3
