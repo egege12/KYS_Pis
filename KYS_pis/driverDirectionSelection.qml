@@ -41,6 +41,41 @@ Item {
                 }
                 z:3
             }
+            MenuButton {
+                id : buttonTest
+                anchors.right:buttonUpdate.left
+                anchors.rightMargin:20;
+                anchors.bottom:parent.bottom
+                anchors.bottomMargin:20;
+                width:100
+                height:40
+                radius: 0.5
+                imageRatio: 1
+                disableButtonClick: false
+                buttonText: "SES TEST"
+                onButtonClicked:{
+                    dataPoints.playSoundStations="file:///"+dataPoints.getPathAudio(dataPoints.currentStation);
+                }
+                z:3
+            }
+            MenuButton {
+                id : buttonCancel
+                anchors.right:buttonTest.left
+                anchors.rightMargin:20;
+                anchors.bottom:parent.bottom
+                anchors.bottomMargin:20;
+                width:100
+                height:40
+                radius: 0.5
+                visible:false
+                imageRatio: 1
+                disableButtonClick: false
+                buttonText: "IPTAL ET"
+                onButtonClicked:{
+                   dataPoints.cancelLineSelection();
+                }
+                z:3
+            }
 
             ScrollView {
                 id: linesArea
@@ -127,6 +162,13 @@ Item {
                 target: dataPoints
                 onDataImportedChanged: {
                     driverDirectionRectangle.checkIfDataImported();
+                }
+                onSelectionDoneChanged:{
+                    if(dataPoints.selectionDone){
+                        buttonCancel.visible=true;
+                    }else{
+                        buttonCancel.visible=false;
+                    }
                 }
             }
             Component.onCompleted: {

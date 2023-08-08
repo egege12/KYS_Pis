@@ -331,7 +331,7 @@ public slots:
     void increaseConfirmationStation();
     void deacreaseConfirmationStation();
     QString getStationName(QString stationID);
-
+    void cancelLineSelection();
     /*Video*/
     void logVideoPlay(QString mediaId);
     void logMediaPlay(QString mediaName);
@@ -564,6 +564,17 @@ inline QString endPointsClass::getStationName(QString stationID)
         }
     }
     return stationID;
+}
+
+inline void endPointsClass::cancelLineSelection()
+{
+    this->setLineSelected(false);
+    this->setSelectionDone(false);
+    this->selectedLine.clear();
+    this->setCurrentLine("");
+    this->setCurrentStation("");
+    this->setNextStation("");
+    this->currentViewFour.clear();
 }
 
 inline void endPointsClass::logVideoPlay(QString mediaId)

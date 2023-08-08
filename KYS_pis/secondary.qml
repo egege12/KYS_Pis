@@ -22,38 +22,6 @@ Window {
     property bool audioPaused : false;
     property int iconSize : 30;
     property int iconPadding: 10;
-    //
-//    Rectangle {
-//        id:testArea
-//        anchors.left:parent.left
-//        anchors.top:parent.top
-//        width: parent.width
-//        height: 40
-//        color: "white"
-//        ButtonBar{
-//            id:windowButtonBar
-//            anchors.top: parent.top
-//            anchors.topMargin:1
-//            anchors.right:parent.right
-//            anchors.rightMargin:1
-//            onFullScreenClicked:{
-//                if(fullscreen === true){
-//                    root.showNormal()
-//                }else{
-//                    root.showFullScreen()
-//                }
-//                fullscreen= !fullscreen}
-//            onIconSizeClicked: {
-//                if(iconSize === true){
-//                    root.showNormal()
-//                }else{
-//                    root.showMinimized()
-//                }
-//                iconSize= !iconSize}
-//            onEscapeClicked: Qt.quit()
-
-//        }
-//    }
 
     Rectangle {
         anchors.left:parent.left
@@ -238,8 +206,86 @@ Window {
                 source:"/img/backgroundHalfOpacity.png"
                 mipmap:true
             }
+            Rectangle{
+                id:infoArea
+                height:50
+                width:parent.width
+                anchors.top: parent.top
+                anchors.left:parent.left
+                color: "transparent"
+                border.color: "white"
+                border.width: 1
+                Text{
+                    id:mediaHeader
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left:parent.left
+                    anchors.leftMargin:5
+                    text:"MEDYA: "
+                    font.pixelSize: 18
+                    elide: Text.ElideLeft
+                    antialiasing: true
+                    font.hintingPreference: Font.PreferNoHinting
+                    style: Text.Normal
+                    focus: false
+                    font.weight: Font.Bold
+                    font.family: "Verdana"
+                    color: "white"
+                }
+                Text{
+                    id:mediaContent
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left:mediaHeader.right
+                    anchors.leftMargin:5
+                    text:dataPoints.activeCommercial
+                    font.pixelSize: 18
+                    elide: Text.ElideLeft
+                    antialiasing: true
+                    font.hintingPreference: Font.PreferNoHinting
+                    style: Text.Normal
+                    focus: false
+                    font.weight: Font.Bold
+                    font.family: "Verdana"
+                    color: "white"
+                }
+                Text{
+                    id:anounceHeader
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left:parent.left
+                    anchors.leftMargin:parent.width/2
+                    text:"SES: "
+                    font.pixelSize: 18
+                    elide: Text.ElideLeft
+                    antialiasing: true
+                    font.hintingPreference: Font.PreferNoHinting
+                    style: Text.Normal
+                    focus: false
+                    font.weight: Font.Bold
+                    font.family: "Verdana"
+                    color: "white"
+                }
+                Text{
+                    id:anounceContent
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left:anounceHeader.right
+                    anchors.leftMargin:5
+                    text:dataPoints.activeAnounce
+                    font.pixelSize: 18
+                    elide: Text.ElideLeft
+                    antialiasing: true
+                    font.hintingPreference: Font.PreferNoHinting
+                    style: Text.Normal
+                    focus: false
+                    font.weight: Font.Bold
+                    font.family: "Verdana"
+                    color: "white"
+                }
+            }
+
             Frame{
-                anchors.fill:parent
+                anchors.top:infoArea.bottom
+                anchors.bottom:parent.bottom
+                anchors.left:parent.left
+                anchors.right:parent.right
                 anchors.margins: 1
                 z:3
                 StackView {
@@ -538,6 +584,7 @@ Window {
                 if(playerStations.source !==""){
                     dataPoints.pauseAnounce = true;
                     playerStations.play();
+                    dataPoints.logMediaPlay(playerStations.source)
                 }else{
                     dataPoints.pauseAnounce = false;
                 }
@@ -580,6 +627,12 @@ Window {
                 playerSound.pause();
                 audioPaused=true;
             }
+        }
+        onActiveCommercialChanged:{
+            mediaContent.text=dataPoints.activeCommercial
+        }
+        onActiveAnounceChanged:{
+            anounceContent.text=dataPoints.activeAnounce
         }
     }
 }

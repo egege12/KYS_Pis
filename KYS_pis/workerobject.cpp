@@ -44,6 +44,7 @@ workerObject::workerObject(QObject *parent, endPointsClass *endPoints)
     this->waitToStop= false;
     this->serialPortFailed=false;
     this->GPSGNSSNotEmpty=false;
+
 }
 
 workerObject::~workerObject()
@@ -311,7 +312,7 @@ void workerObject::readAnounceFolder()
                     endPointsClass::anounce *newItem = new endPointsClass::anounce;
                     newItem->name = fileName.replace(".mp3","");
                     newItem->lastPlay = QTime::currentTime();
-                    newItem->period = "";
+                    newItem->period = "Günde 1";
                     newItem->periodical = false;
                     this->endPoints->periodicAnounceList.append(newItem);
                }
