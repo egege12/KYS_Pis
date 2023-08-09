@@ -334,6 +334,8 @@ public slots:
     /*Video*/
     void logVideoPlay(QString mediaId);
     void logMediaPlay(QString mediaName);
+    void logStationMediaPlay(QString mediaName);
+    void logConitnueMedia(QString mediaName);
     void setVideoUnavailable();
     void setVideoAvailable();
 
@@ -389,6 +391,7 @@ private:
     bool m_periodicalAnounceAllowed;
 };
 struct  endPointsClass::station{
+    QString code;
     QString id;
     QString name;
     QString latitude;
@@ -396,7 +399,7 @@ struct  endPointsClass::station{
     QString soundURL;
     QString passed;
     bool operator==(const station& other) const {
-        return this->id == other.id;
+        return this->code == other.code;
     }
 };
 struct  endPointsClass::videos{
@@ -506,12 +509,12 @@ inline QString endPointsClass::getOffsetStation(QString currentStationID, int of
 {
     int index=0;
     for(station* Obj : this->allLineStations.value(this->selectedLine)){
-        if(Obj->id ==currentStationID){
+        if(Obj->code ==currentStationID){
         index = this->allLineStations.value(this->selectedLine).indexOf(Obj);
         }
     }
     if((index + offset < this->allLineStations.value(this->selectedLine).size())&&(index + offset > 0)){
-        return this->allLineStations.value(this->selectedLine).at(index+offset)->id;
+        return this->allLineStations.value(this->selectedLine).at(index+offset)->code;
     }else{
         return currentStationID;
     }
@@ -527,12 +530,12 @@ inline void endPointsClass::increaseConfirmationStation()
     int index=0;
     if(this->allLineStations.contains(this->selectedLine)){
         for(station* Obj : this->allLineStations.value(this->selectedLine)){
-            if(Obj->id ==confirmStationID()){
+        if(Obj->code ==confirmStationID()){
                 index = this->allLineStations.value(this->selectedLine).indexOf(Obj);
             }
         }
         if(index+1 < this->allLineStations.value(this->selectedLine).size()){
-            setConfirmStationID(this->allLineStations.value(this->selectedLine).at(index+1)->id);
+            setConfirmStationID(this->allLineStations.value(this->selectedLine).at(index+1)->code);
         }
 
     }
@@ -543,12 +546,12 @@ inline void endPointsClass::deacreaseConfirmationStation()
     int index=0;
     if(this->allLineStations.contains(this->selectedLine)){
         for(station* Obj : this->allLineStations.value(this->selectedLine)){
-            if(Obj->id ==confirmStationID()){
+            if(Obj->code ==confirmStationID()){
                 index = this->allLineStations.value(this->selectedLine).indexOf(Obj);
             }
         }
         if(index >0){
-            setConfirmStationID(this->allLineStations.value(this->selectedLine).at(index-1)->id);
+            setConfirmStationID(this->allLineStations.value(this->selectedLine).at(index-1)->code);
         }
 
     }
@@ -558,7 +561,7 @@ inline QString endPointsClass::getStationName(QString stationID)
 {
     for(const QList<station*> Obj1 : this->allLineStations){
         for(station* Obj2 : Obj1){
-            if(Obj2->id ==stationID){
+            if(Obj2->code ==stationID){
                 return Obj2->name;
             }
         }
@@ -607,7 +610,35 @@ inline void endPointsClass::logMediaPlay(QString mediaName)
         setActiveAnounce("");
     }
 
+}
 
+inline void endPointsClass::logStationMediaPlay(QString mediaName)
+{
+    if(!mediaName.isEmpty()){
+        QString data = mediaName.split("/").last().remove(".mp3");
+        QString name = "";
+        foreach(endPointsClass::station item , currentLineStations){
+            if(data == item.code){
+                name=item.name;
+                this->setErrCode(name+" durak anonsu yapılıyor.");
+                setActiveAnounce(name);
+                break;
+            }
+        }
+
+    }else{
+        setActiveAnounce("");
+    }
+}
+
+inline void endPointsClass::logConitnueMedia(QString mediaName)
+{
+    if(!mediaName.isEmpty()){
+        QString data = mediaName.split("/").last().remove(".mp3");
+        setActiveAnounce(data);
+    }else{
+        setActiveAnounce("");
+    }
 }
 
 inline void endPointsClass::setVideoUnavailable()
@@ -635,7 +666,7 @@ inline QString endPointsClass::getViewFourMember(unsigned int index)
 inline QString endPointsClass::getPathAudio(QString stationID)
 {
     for(endPointsClass::station Obj : this->currentLineStations){
-        if(Obj.id == stationID){
+         if(Obj.code == stationID){
             //qDebug()<<"found getPathAudio";
             return Obj.soundURL;
         }
@@ -653,6 +684,8 @@ inline void endPointsClass::addPeriodicAnounceList(QString anounceAdd)
     for(endPointsClass::anounce *member : this->periodicAnounceList){
         if(member->name == anounceAdd){
             member->periodical = true;
+            member->lastPlay = QTime::currentTime();
+            qDebug()<<anounceAdd+" sesi periyodiklere eklendi.";
         }
     }
 }
@@ -662,6 +695,7 @@ inline void endPointsClass::removePeriodicAnounceList(QString anounceRemove)
     for(endPointsClass::anounce *member : this->periodicAnounceList){
         if(member->name == anounceRemove){
             member->periodical = false;
+            qDebug()<<anounceRemove+" sesi periyodiklerden çıkarıldı";
         }
     }
 }
@@ -672,7 +706,7 @@ inline void endPointsClass::setPeriodofAnounceList(QString anounceSet, QString p
         //qDebug()<<member->name;
         if(member->name == anounceSet){
             member->period = period;
-            //qDebug()<<period;
+           qDebug()<<anounceSet+" sesi periyodu "+period +"yapıldı.";
         }
     }
 }
@@ -681,7 +715,8 @@ inline QString endPointsClass::getPeriodofAnounceList(QString anounceGet)
 {
     for(endPointsClass::anounce *member : this->periodicAnounceList){
         if(member->name == anounceGet){
-            return member->period;
+           qDebug()<<anounceGet+" sesi periyodu "+ member->period +" talep edildi..";
+            return member->period; 
         }
     }
     return "Ayarlanmadı";
@@ -692,6 +727,7 @@ inline bool endPointsClass::getAnouncePeriodActive(QString anounceGet)
     for(endPointsClass::anounce *member : this->periodicAnounceList){
         if(member->name == anounceGet){
             return member->periodical;
+            qDebug()<<anounceGet+" sesi periyodik : "+member->periodical;
         }
     }
     return false;

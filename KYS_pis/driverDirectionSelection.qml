@@ -67,7 +67,7 @@ Item {
                 width:100
                 height:40
                 radius: 0.5
-                visible:false
+                visible:dataPoints.selectionDone;
                 imageRatio: 1
                 disableButtonClick: false
                 buttonText: "IPTAL ET"
@@ -164,11 +164,7 @@ Item {
                     driverDirectionRectangle.checkIfDataImported();
                 }
                 onSelectionDoneChanged:{
-                    if(dataPoints.selectionDone){
-                        buttonCancel.visible=true;
-                    }else{
-                        buttonCancel.visible=false;
-                    }
+                        buttonCancel.visible=dataPoints.selectionDone;
                 }
             }
             Component.onCompleted: {

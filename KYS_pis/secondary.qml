@@ -213,8 +213,9 @@ Window {
                 anchors.top: parent.top
                 anchors.left:parent.left
                 color: "transparent"
-                border.color: "white"
+                border.color: "gray"
                 border.width: 1
+
                 Text{
                     id:mediaHeader
                     anchors.verticalCenter: parent.verticalCenter
@@ -286,7 +287,7 @@ Window {
                 anchors.bottom:parent.bottom
                 anchors.left:parent.left
                 anchors.right:parent.right
-                anchors.margins: 1
+                anchors.margins: 3
                 z:3
                 StackView {
                     id: stack
@@ -571,6 +572,7 @@ Window {
                 case MediaPlayer.EndOfMedia:
                     playerStations.source="";
                     dataPoints.pauseAnounce = false;
+                    dataPoints.logStationMediaPlay(playerSound.source)
                     break;
                 case MediaPlayer.InvalidMedia:
                     //console.log("InvalidMedia");
@@ -584,13 +586,10 @@ Window {
                 if(playerStations.source !==""){
                     dataPoints.pauseAnounce = true;
                     playerStations.play();
-                    dataPoints.logMediaPlay(playerStations.source)
+                    dataPoints.logStationMediaPlay(playerStations.source)
                 }else{
                     dataPoints.pauseAnounce = false;
                 }
-
-
-
         }
 
     }
@@ -606,6 +605,7 @@ Window {
                 playerStations.source = dataPoints.playSoundStations;
             }else{
                 playerStations.source = "";
+                dataPoints.pauseAnounce = false;
             }
     }
     Connections{
@@ -613,6 +613,7 @@ Window {
         onPlaySoundChanged:
             if(playerSound.source != dataPoints.playSound) {
                 playerSound.source = dataPoints.playSound;
+                dataPoints.pauseAnounce = false;
             }else{
                 playerSound.source = "";
             }
@@ -623,6 +624,7 @@ Window {
             if(!dataPoints.pauseAnounce){
                 playerSound.play();
                 audioPaused=false;
+                dataPoints.logConitnueMedia(playerSound.source)
             }else{
                 playerSound.pause();
                 audioPaused=true;

@@ -10,6 +10,7 @@
 #include <QList>
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
+#include <QLocalSocket>
 class workerObject : public QObject
 {
     Q_OBJECT
@@ -19,7 +20,8 @@ private:
     QTimer *timer1;
     QTimer *timer2;
     QTimer *timer3;
-    QTimer * timer4;
+    QTimer *timer4;
+    QTimer *timer5;
     QList<QString> lines;
     QList<QString> pendingAnonunceList;
     unsigned failCounterLifeSign;
@@ -38,6 +40,7 @@ private:
     bool inStation;
     bool busStopped;
     bool waitToStop;
+    QLocalSocket *comPisAppSocket;
     //Application Methods
 
     void beginSpecificStation(QString stationID);
@@ -89,7 +92,7 @@ public slots:
     void readAnounceFolder();
     void startObject();
     void stopObject();
-    void rwComApp();
+    //void rwComApp();
     void cycleCall();
     void updateList();
     void handleLineSelection();
@@ -97,6 +100,11 @@ public slots:
     void readSerialGPS();
     void onTimeoutGPS();
     void onAnounceControl();
+    void readComSocketData();
+    void sendComSocketData();
+    void errorComSocket();
+    void stateComSocket();
+    void onTimeOutSocket();
 signals:
     void doneUpdate(bool updateStations);
 

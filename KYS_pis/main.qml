@@ -244,7 +244,6 @@ Window {
                 fillMode:Image.PreserveAspectFit
             }
         }
-
         Rectangle{
             id:rightSide
             anchors.left: leftSide.right
