@@ -54,7 +54,7 @@ Window {
             Image{
                 id:backgroundImageTopBanner
                 anchors.fill: parent
-                source:"/img/backgroundHalfOpacity.png"
+                source:"qrc:/img/backgroundHalfOpacity.png"
                 mipmap:true
             }
             z:1
@@ -64,7 +64,7 @@ Window {
                 anchors.topMargin: 5
                 anchors.leftMargin:5
                 anchors.top:parent.top
-                source:"qrc:/img/kayseriLogo.png"
+                source:"file:///C:/pisKys/images/kayseriLogo.png"
                 height: parent.height - 10
                 fillMode: Image.PreserveAspectFit
                 mipmap:true
@@ -75,7 +75,7 @@ Window {
                 anchors.topMargin: 5
                 anchors.rightMargin:5
                 anchors.top:parent.top
-                source:"qrc:/img/kayseriBBLogo.png"
+                source:"file:///C:/pisKys/images/kayseriBBLogo.png"
                 height: parent.height - 10
                 fillMode: Image.PreserveAspectFit
                 mipmap:true
@@ -208,7 +208,7 @@ Window {
             }
             Rectangle{
                 id:infoArea
-                height:50
+                height:30
                 width:parent.width
                 anchors.top: parent.top
                 anchors.left:parent.left
@@ -222,7 +222,7 @@ Window {
                     anchors.left:parent.left
                     anchors.leftMargin:5
                     text:"MEDYA: "
-                    font.pixelSize: 18
+                    font.pixelSize: 12
                     elide: Text.ElideLeft
                     antialiasing: true
                     font.hintingPreference: Font.PreferNoHinting
@@ -238,7 +238,7 @@ Window {
                     anchors.left:mediaHeader.right
                     anchors.leftMargin:5
                     text:dataPoints.activeCommercial
-                    font.pixelSize: 18
+                    font.pixelSize: 12
                     elide: Text.ElideLeft
                     antialiasing: true
                     font.hintingPreference: Font.PreferNoHinting
@@ -254,7 +254,7 @@ Window {
                     anchors.left:parent.left
                     anchors.leftMargin:parent.width/2
                     text:"SES: "
-                    font.pixelSize: 18
+                    font.pixelSize: 12
                     elide: Text.ElideLeft
                     antialiasing: true
                     font.hintingPreference: Font.PreferNoHinting
@@ -270,7 +270,7 @@ Window {
                     anchors.left:anounceHeader.right
                     anchors.leftMargin:5
                     text:dataPoints.activeAnounce
-                    font.pixelSize: 18
+                    font.pixelSize: 12
                     elide: Text.ElideLeft
                     antialiasing: true
                     font.hintingPreference: Font.PreferNoHinting

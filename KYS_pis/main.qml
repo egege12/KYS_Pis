@@ -76,6 +76,7 @@ Window {
                 font.weight: Font.Bold
                 font.family: "Verdana"
                 color: "white"
+
                 function set(){
                     timeText.text=Qt.formatTime(new Date(), "hh:mm");
                 }
@@ -83,7 +84,7 @@ Window {
             Text {
                 id: dateText
                 font.pixelSize: 24
-                text: new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \n        dddd")
+                text: new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \ndddd")
                 anchors.top: timeText.bottom
                 anchors.topMargin: 50
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -97,8 +98,9 @@ Window {
                 font.weight: Font.Bold
                 font.family: "Verdana"
                 color: "white"
+                 horizontalAlignment: Text.AlignLeft
                 function set(){
-                    dateText.text= new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \n        dddd");
+                    dateText.text= new Date().toLocaleDateString(Qt.locale("tr_TR"),"dd MMMM yyyy \ndddd");
                 }
             }
             z:1
@@ -149,7 +151,7 @@ Window {
                     anchors.left: parent.left
                     anchors.right: seperatorBanners.left
                     anchors.verticalCenter: parent.verticalCenter
-                    source:"qrc:/img/kayseriLogo.png"
+                    source:"file:///C:/pisKys/images/kayseriLogo.png"
                     width:100
                     fillMode: Image.PreserveAspectFit
                     mipmap:true
@@ -239,7 +241,7 @@ Window {
                 id:imageScreenSaver
                 anchors.fill: parent
                 antialiasing: true
-                source: "qrc:/img/logoScreenSaver_kys.png"
+                source: "file:///C:/pisKys/images/logoScreenSaver_kys.png"
                 opacity: 1.0
                 fillMode:Image.PreserveAspectFit
             }

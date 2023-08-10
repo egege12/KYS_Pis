@@ -11,6 +11,7 @@
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
 #include <QLocalSocket>
+#include <QLocalServer>
 class workerObject : public QObject
 {
     Q_OBJECT
@@ -41,6 +42,7 @@ private:
     bool busStopped;
     bool waitToStop;
     QLocalSocket *comPisAppSocket;
+    QLocalServer *comPisServer;
     //Application Methods
 
     void beginSpecificStation(QString stationID);
@@ -100,11 +102,11 @@ public slots:
     void readSerialGPS();
     void onTimeoutGPS();
     void onAnounceControl();
-    void readComSocketData();
-    void sendComSocketData();
-    void errorComSocket();
-    void stateComSocket();
+    void rwComSocketData_new();
     void onTimeOutSocket();
+
+    void handleConnection();
+    void clientDisconnected();
 signals:
     void doneUpdate(bool updateStations);
 

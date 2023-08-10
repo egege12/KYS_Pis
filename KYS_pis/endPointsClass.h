@@ -449,6 +449,7 @@ inline endPointsClass::endPointsClass(QObject *parent) : QObject(parent)
      m_actualLatitude="null";
      m_comAppOK=false;
      viewLine="null";
+     m_vehicleSpeed = "0";
 }
 
 inline endPointsClass::~endPointsClass()
